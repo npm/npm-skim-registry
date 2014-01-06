@@ -26,7 +26,6 @@ function Skim(opts) {
 
   this.skim = url.parse(opts.skim || opts.db).href
   this.skim = this.skim.replace(/\/+$/, '')
-
   this.fat = this.db
 
   this.on('put', this.onput)

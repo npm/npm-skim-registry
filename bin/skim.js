@@ -42,6 +42,7 @@ var seqFile = opts.seq_file;
 var seq = opts.seq;
 var inactivity_ms = opts.inactivity_ms;
 var del = opts.delete;
+var skim = opts.skim || opts.db;
 
 
 if (!db || !path) {
@@ -70,7 +71,8 @@ Skim({
   seqFile: seqFile,
   inactivity_ms: inactivity_ms,
   seq: seq,
-  delete: del
+  delete: del,
+  skim: skim
 }).on('put', function(doc) {
   console.log('PUT %s', doc._id);
 }).on('rm', function(doc) {
