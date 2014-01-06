@@ -66,7 +66,7 @@ Skim.prototype.onCuttleComplete = function(doc, results) {
   if (doc.name === 'npm')
     k = k.filter(function (key) { return key !== 'favicon.ico' })
 
-  if (!k.length) {
+  if (!k.length && this.skim === this.db) {
     // no disallowed attachments, just leave as-is
     return MantaCouch.prototype.onCuttleComplete.call(this, doc, results)
   }
