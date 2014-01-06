@@ -92,7 +92,12 @@ Skim.prototype.onCuttleComplete = function(doc, results) {
 
   // put the attachment-free document back to the database url
   hh.request(p, parse(function(er, data, res) {
-    if (er)
+    // If the db and skim are the same, then a 409 is not a problem,
+    // because whatever that other change was, it'll just get skimmed again,
+    // and then eventually go in nicely.
+    if (er && er.statusCode === 409 && this.skim === this.db)
+      er = null
+    else if (er)
       this.emit('error', er)
     else
       MantaCouch.prototype.onCuttleComplete.call(this, doc, results)
