@@ -29,6 +29,26 @@ function Skim(opts) {
   this.fat = this.db
 
   this.on('put', this.onput)
+  if (this.skim !== this.db)
+    this.on('rm', this.onrm)
+}
+
+Skim.prototype.onrm = function(change) {
+  var h = url.parse(this.skim + '/' + change.id)
+  h.method = 'HEAD'
+  hh.request(h, function(res) {
+    // already gone, maybe
+    if (res.statusCode === 404)
+      return
+
+    var rev = res.headers.etag
+    var d = url.parse(this.skim + '/' + change.id + '?rev=' + rev)
+    d.method = 'DELETE'
+    hh.request(d, parse(function(er, data, res) {
+      if (er && er.statusCode !== 404)
+        this.emit('error', er)
+    }.bind(this)))
+  }.bind(this)).end()
 }
 
 Skim.prototype.onput = function(doc) {
@@ -80,7 +100,19 @@ Skim.prototype.onCuttleComplete = function(doc, results) {
       delete doc._attachments
   }
 
-  var p = url.parse(this.skim + '/' + doc.name)
+  this.putBack(doc, results)
+}
+
+Skim.prototype.putBack = function(doc, results) {
+  var p = this.skim + '/' + doc.name
+
+  // If this isn't a putBACK, then treat it like a replication job
+  // If someone wrote something else, go ahead and be in conflict.
+  if (this.db !== this.skim)
+    p += '?new_edits=false'
+
+  p = url.parse(p)
+
   delete doc._json
   var body = new Buffer(JSON.stringify(doc), 'utf8')
   p.method = 'PUT'
@@ -97,7 +129,8 @@ Skim.prototype.onCuttleComplete = function(doc, results) {
     // and then eventually go in nicely.
     if (er && er.statusCode === 409 && this.skim === this.db)
       er = null
-    else if (er)
+
+    if (er)
       this.emit('error', er)
     else
       MantaCouch.prototype.onCuttleComplete.call(this, doc, results)
