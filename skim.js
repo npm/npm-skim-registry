@@ -38,8 +38,8 @@ Skim.prototype.onput = function(doc) {
       delete att[f]
 
     else {
-      f = f.substr(doc.name + 1).replace(/\.tgz$/, '')
-      if (!versions[f])
+      var v = f.substr(doc.name.length + 1).replace(/\.tgz$/, '')
+      if (!doc.versions[v])
         delete att[f]
     }
   })
@@ -49,6 +49,8 @@ Skim.prototype.onput = function(doc) {
     if (!att[f])
       att[f] = { skip: true }
   })
+
+  doc._attachments = att
 }
 
 Skim.prototype.onCuttleComplete = function(doc, results) {

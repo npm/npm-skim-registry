@@ -7,6 +7,7 @@ var path = require('path')
 var fs = require('fs')
 var http = require('http')
 var url = require('url')
+var parse = require('parse-json-response')
 
 // just in case it was still alive from a previous run, kill it.
 require('./zz-teardown.js')
@@ -80,6 +81,8 @@ test('create test record', function(t) {
   var tgzData = fs.readFileSync(tf, 'base64')
   testPkg._attachments['test-package-0.0.0.tgz'].data = tgzData
   testPkg._attachments['test-package-0.0.0.tgz'].stub = false
+  testPkg._attachments['test-package-0.0.0-blerg.tgz'] =
+    JSON.parse(JSON.stringify(testPkg._attachments['test-package-0.0.0.tgz']))
 
   var body = new Buffer(JSON.stringify(testPkg))
   var u = url.parse('http://admin:admin@localhost:15984/registry/test-package')

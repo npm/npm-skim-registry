@@ -3,6 +3,9 @@ var test = require('tap').test
 var mpath = '~~/stor/npm-skim-registry-testing'
 var skim = require('../skim.js')
 var util = require('util');
+var http = require('http')
+var url = require('url')
+var parse = require('parse-json-response')
 
 test('first sync', function(t) {
   var evs =
@@ -23,6 +26,7 @@ test('first sync', function(t) {
 test('second sync', function(t) {
   var evs =
     [ 'put test-package',
+      'sent test-package/doc.json',
       'complete test-package' ]
 
   testEvents(evs, t);
@@ -37,6 +41,8 @@ function testEvents(evs, t) {
   function ev() {
     var s = util.format.apply(util, arguments);
     t.ok(evs[s], s);
+    if (!evs[s])
+      throw new Error('Unexpected event: ' + s)
     evs[s]--;
     if (evs[s] === 0)
       delete evs[s];
@@ -67,3 +73,14 @@ function testEvents(evs, t) {
     ev('complete %s', doc._id);
   });
 }
+
+test('check doc after skim', function(t) {
+  var g = url.parse('http://localhost:15984/registry/test-package')
+  g.headers = { 'connection': 'close' }
+  http.get(g, parse(function(er, data, res) {
+    if (er)
+      throw er
+    t.same(data._attachments, undefined)
+    t.end()
+  }))
+})
