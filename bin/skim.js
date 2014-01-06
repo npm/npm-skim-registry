@@ -19,7 +19,13 @@ var parser = dashdash.createParser({
       helpArg: 'MS' },
     { names: [ 'delete', 'd' ],
       type: 'bool',
-      help: 'Delete removed attachments and docs from manta' }
+      help: 'Delete removed attachments and docs from manta' },
+    { names: [ 'skim', 's'] ,
+      type: 'string',
+      helpArg: 'URL',
+      help: 'Target to write attachment free docs. ' +
+            'Defaults to put back into COUCHDB arg.' }
+
   ].concat(manta.DEFAULT_CLI_OPTIONS)
 });
 
@@ -57,7 +63,7 @@ Usage: npm-skim-registry [args] COUCHDB MANTAPATH
 */
 }
 
-var mc = Skim({
+Skim({
   client: client,
   db: db,
   path: path,

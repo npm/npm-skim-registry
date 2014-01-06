@@ -19,7 +19,15 @@ function Skim(opts) {
   if (!(this instanceof Skim))
     return new Skim(opts)
 
+  if (opts.fat && !opts.db)
+    opts.db = opts.fat
+
   MantaCouch.call(this, opts)
+
+  this.skim = url.parse(opts.skim || opts.db).href
+  this.skim = this.skim.replace(/\/+$/, '')
+
+  this.fat = this.db
 
   this.on('put', this.onput)
 }
@@ -73,7 +81,7 @@ Skim.prototype.onCuttleComplete = function(doc, results) {
       delete doc._attachments
   }
 
-  var p = url.parse(this.db + '/' + doc.name)
+  var p = url.parse(this.skim + '/' + doc.name)
   delete doc._json
   var body = new Buffer(JSON.stringify(doc), 'utf8')
   p.method = 'PUT'
