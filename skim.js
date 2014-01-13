@@ -58,19 +58,19 @@ Skim.prototype.onput = function(doc) {
   var att = doc._attachments || {}
   var versions = Object.keys(doc.versions || {})
 
+  // Delete any non-tarball things that are definitely not ok
   Object.keys(att).forEach(function(f) {
     if (f.indexOf(doc.name + '-') !== 0 || !f.match(/\.tgz$/))
       delete att[f]
-
-    else {
-      var v = f.substr(doc.name.length + 1).replace(/\.tgz$/, '')
-      if (!doc.versions[v])
-        delete att[f]
-    }
   })
 
+  // Keep any attachments that are attached to an extant version.
   versions.forEach(function (ver) {
     var f = doc.name + '-' + ver + '.tgz'
+    if (!att[f])
+      att[f] = { skip: true }
+
+    var f = path.basename(url.parse(versions[ver].dist.tarball).pathname)
     if (!att[f])
       att[f] = { skip: true }
   })
