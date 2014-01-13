@@ -59,19 +59,22 @@ Skim.prototype.onput = function(doc) {
   var att = doc._attachments || {}
   var versions = Object.keys(doc.versions || {})
 
-  // Delete any non-tarball things that are definitely not ok
+  // keep any that are the tarball for a version
+  var keep = versions.reduce(function(set, v) {
+    var p = url.parse(doc.versions[v].dist.tarball).pathname
+    var f = path.basename(p)
+    set[f] = true
+    return set
+  }, {})
+
+  // Delete any attachments that are not keepers
   Object.keys(att).forEach(function(f) {
-    if (f.indexOf(doc.name + '-') !== 0 || !f.match(/\.tgz$/))
+    if (!keep[f])
       delete att[f]
   })
 
-  // Keep any attachments that are attached to an extant version.
-  versions.forEach(function (ver) {
-    var f = doc.name + '-' + ver + '.tgz'
-    if (!att[f])
-      att[f] = { skip: true }
-
-    var f = path.basename(url.parse(versions[ver].dist.tarball).pathname)
+  // Don't delete any keepers that were already put into manta
+  Object.keys(keep).forEach(function(f) {
     if (!att[f])
       att[f] = { skip: true }
   })
