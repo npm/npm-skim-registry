@@ -1,9 +1,10 @@
 // load in mcouch
 // change up the appropriate logic
 // - set a {skip:true} on any tgz attachment for any version, if missing
-// - remove any attachments that are not for published versions, except
-//   for "favicon.ico" on the "npm" doc
-// - if opts.vacuum is set, then remove the attachments and PUT back
+// - remove any attachments that are not for published versions
+// - remove the attachments and PUT back to this.skim
+//   - if this.skim === this.db, then bump the rev
+//   - otherwise, treat it like a replication, and ?new_edits=false
 
 var MantaCouch = require('mcouch')
 var util = require('util')
@@ -58,10 +59,7 @@ Skim.prototype.onput = function(doc) {
   var versions = Object.keys(doc.versions || {})
 
   Object.keys(att).forEach(function(f) {
-    if (doc.name === 'npm' && f === 'favicon.ico')
-      return
-
-    else if (f.indexOf(doc.name + '-') !== 0 || !f.match(/\.tgz$/))
+    if (f.indexOf(doc.name + '-') !== 0 || !f.match(/\.tgz$/))
       delete att[f]
 
     else {
@@ -81,24 +79,14 @@ Skim.prototype.onput = function(doc) {
 }
 
 Skim.prototype.onCuttleComplete = function(doc, results) {
-  // the only attachment allowed is favicon.ico on npm record
   var k = Object.keys(doc._attachments || {})
-  if (doc.name === 'npm')
-    k = k.filter(function (key) { return key !== 'favicon.ico' })
 
   if (!k.length && this.skim === this.db) {
     // no disallowed attachments, just leave as-is
     return MantaCouch.prototype.onCuttleComplete.call(this, doc, results)
   }
 
-  if (doc._attachments) {
-    if (doc.name === 'npm' && doc._attachments['favicon.ico'])
-      doc._attachments = {
-        'favicon.ico': doc._attachments['favicon.ico']
-      }
-    else
-      delete doc._attachments
-  }
+  delete doc._attachments
 
   this.putBack(doc, results)
 }
