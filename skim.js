@@ -11,6 +11,7 @@ var util = require('util')
 var hh = require('http-https')
 var parse = require('parse-json-response')
 var url = require('url')
+var path = require('path')
 
 module.exports = Skim
 
