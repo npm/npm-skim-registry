@@ -93,7 +93,11 @@ Skim.prototype.onput = function(doc) {
 }
 
 Skim.prototype.onCuttleComplete = function(doc, results) {
-  var k = Object.keys(doc._attachments || {})
+  var att = doc._attachments || {}
+  var k = Object.keys(att).filter(function (a) {
+    // don't do putbacks for {skip:true} attachments
+    return !att[a].skip
+  })
 
   if (!k.length && this.skim === this.db) {
     // no disallowed attachments, just leave as-is
