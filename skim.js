@@ -35,6 +35,15 @@ function Skim(opts) {
     this.on('rm', this.onrm)
 }
 
+Skim.prototype.put = function(change) {
+  if (change.id.match(/^_design\//) && this.db !== this.skim) {
+    this.pause()
+    this.putBack(change.doc, null)
+  } else {
+    return MantaCouch.prototype.put.apply(this, arguments)
+  }
+}
+
 Skim.prototype.onrm = function(change) {
   var h = url.parse(this.skim + '/' + change.id)
   h.method = 'HEAD'
@@ -96,7 +105,7 @@ Skim.prototype.onCuttleComplete = function(doc, results) {
 }
 
 Skim.prototype.putBack = function(doc, results) {
-  var p = this.skim + '/' + doc.name
+  var p = this.skim + '/' + encodeURIComponent(doc._id)
 
   // If this isn't a putBACK, then treat it like a replication job
   // If someone wrote something else, go ahead and be in conflict.
