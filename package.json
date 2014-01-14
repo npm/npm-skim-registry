@@ -1,6 +1,6 @@
 {
   "name": "npm-skim-registry",
-  "version": "0.3.5",
+  "version": "0.3.6",
   "description": "Move attachments into Manta and out of the registry",
   "main": "skim.js",
   "dependencies": {
