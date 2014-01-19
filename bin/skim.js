@@ -81,4 +81,6 @@ Skim({
   console.log('-> sent %s/%s', doc._id, file.name);
 }).on('delete', function(doc, remote) {
   console.log('-> deleted %s/%s', doc._id, remote);
+}).on('putBack', function(doc) {
+  console.error('-> putback %s', doc._id);
 });
