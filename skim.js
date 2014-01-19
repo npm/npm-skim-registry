@@ -45,8 +45,11 @@ Skim.prototype.put = function(change) {
   }
 }
 
-Skim.prototype.onrm = function(change) {
-  var h = url.parse(this.skim + '/' + change.id)
+Skim.prototype.onrm = function(doc) {
+  if (!doc._id)
+    return
+
+  var h = url.parse(this.skim + '/' + doc._id)
   h.method = 'HEAD'
   hh.request(h, function(res) {
     // already gone, maybe
@@ -54,7 +57,7 @@ Skim.prototype.onrm = function(change) {
       return
 
     var rev = res.headers.etag
-    var d = url.parse(this.skim + '/' + change.id + '?rev=' + rev)
+    var d = url.parse(this.skim + '/' + doc._id + '?rev=' + rev)
     d.method = 'DELETE'
     hh.request(d, parse(function(er, data, res) {
       if (er && er.statusCode !== 404)
