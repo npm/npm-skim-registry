@@ -12,7 +12,7 @@ var hh = require('http-https')
 var parse = require('parse-json-response')
 var url = require('url')
 var path = require('path')
-var README_MAXLEN = 2 * 1024 * 1024
+var README_MAXLEN = 64 * 1024
 
 function readmeTrim(doc) {
   var readme = doc.readme || ''
