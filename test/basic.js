@@ -26,7 +26,6 @@ test('first sync', function(t) {
 test('second sync', function(t) {
   var evs =
     [ 'put test-package',
-      'sent test-package/doc.json',
       'complete test-package' ]
 
   testEvents(evs, t);
