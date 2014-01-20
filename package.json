@@ -9,7 +9,8 @@
     "manta-client": "~1.0.5",
     "http-https": "~1.0.0",
     "parse-json-response": "~1.0.0",
-    "manta": "~1.2.6"
+    "manta": "~1.2.6",
+    "npm-registry-readme-trim": "~1.0.0"
   },
   "scripts": {
     "test": "tap test/*.js"
