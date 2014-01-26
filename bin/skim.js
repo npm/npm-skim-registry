@@ -13,6 +13,10 @@ var parser = dashdash.createParser({
       type: 'number',
       help: 'Sequence ID to start at',
       helpArg: 'NUMBER' },
+    { names: [ 'registry', 'r' ],
+      type: 'string',
+      help: 'The registry where attachments can be found.  Optional.',
+      helpArg: 'URL' },
     { names: [ 'inactivity-ms' ],
       type: 'number',
       help: 'Max ms to wait before assuming disconnection.',
@@ -43,6 +47,7 @@ var seq = opts.seq;
 var inactivity_ms = opts.inactivity_ms;
 var del = opts.delete;
 var skim = opts.skim || opts.db;
+var registry = opts.registry || null;
 
 
 if (!db || !path) {
@@ -72,7 +77,8 @@ Skim({
   inactivity_ms: inactivity_ms,
   seq: seq,
   delete: del,
-  skim: skim
+  skim: skim,
+  registry: registry
 }).on('put', function(doc) {
   console.log('PUT %s', doc._id);
 }).on('rm', function(doc) {

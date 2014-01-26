@@ -32,6 +32,13 @@ function Skim(opts) {
   this.db = url.parse(this.db).href.replace(/\/+$/, '')
   this.fat = this.db
 
+  this.registry = null
+  if (opts.registry) {
+    this.registry = url.parse(opts.registry).href
+    this.registry = this.registry.replace(/\/+$/, '')
+  }
+
+
   this.on('put', this.onput)
   if (this.skim !== this.db)
     this.on('rm', this.onrm)
@@ -95,8 +102,20 @@ Skim.prototype.onput = function(doc) {
 
   doc._attachments = att
 
-  // Also, remove per-version readmes, and just have a single max-2mb readme
-  // at the top-level.
+  // If we have a registry config, make sure that all dist.tarball
+  // urls are pointing at the registry url, and not some weird place.
+  if (this.registry) {
+    versions.forEach(function(v) {
+      var version = doc.versions[v]
+      var r = url.parse(version.dist.tarball)
+      var p = '/' + doc.name + '/-/' + path.basename(r.pathname)
+      r = url.parse(this.registry + p)
+      version.dist.tarball = r.href
+    }, this)
+  }
+
+  // Also, remove per-version readmes, and just have a single max-2mb
+  // readme at the top-level.
   readmeTrim(doc)
 }
 
