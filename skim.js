@@ -40,41 +40,50 @@ function Skim(opts) {
 
 
   this.on('put', this.onput)
-  if (this.skim !== this.db)
-    this.on('rm', this.onrm)
 }
 
 Skim.prototype.put = function(change) {
   if (change.id.match(/^_design\//) && this.db !== this.skim) {
     this.pause()
-    this.putBack(change.doc, null)
+    this.putBack(change, null)
   } else {
     return MantaCouch.prototype.put.apply(this, arguments)
   }
 }
 
-Skim.prototype.onrm = function(doc) {
-  if (!doc._id)
-    return
+Skim.prototype.onRm = function(change, er) {
+  // If there's an error, or invalid change, just let mcouch handle it
+  // If the db isn't the same as the skim, then presumably it's already
+  // gone, and if the user was just deleting a conflict or something, we
+  // don't want to completely delete the entire thing.
+  if (er || !change.id || this.db !== this.skim)
+    return MantaCouch.prototype.onRm.call(this, change, er)
 
-  var h = url.parse(this.skim + '/' + doc._id)
+  // Delete from the other before moving on.
+  // To remove all conflicts, keep deleting until 404
+  var h = url.parse(this.skim + '/' + change.id)
   h.method = 'HEAD'
   hh.request(h, function(res) {
-    // already gone, maybe
+    // if already gone, then great
     if (res.statusCode === 404)
-      return
+      return MantaCouch.prototype.onRm.call(this, change, er)
 
     var rev = res.headers.etag
-    var d = url.parse(this.skim + '/' + doc._id + '?rev=' + rev)
+    var d = url.parse(this.skim + '/' + change.id + '?rev=' + rev)
     d.method = 'DELETE'
     hh.request(d, parse(function(er, data, res) {
-      if (er && er.statusCode !== 404)
-        this.emit('error', er)
+      // If we got an error (incl 404) let mcouch handle it
+      // otherwise, delete again, until all conflict revs are gone.
+      if (er)
+        MantaCouch.prototype.onRm.call(this, change, er)
+      else
+        this.onRm(change, er)
     }.bind(this)))
   }.bind(this)).end()
 }
 
-Skim.prototype.onput = function(doc) {
+Skim.prototype.onput = function(change) {
+  var doc = change.doc
   // remove any attachments that don't belong, and
   // put any previously-vacuumed tgz's with a {skip:true}
   var att = doc._attachments || {}
@@ -119,7 +128,8 @@ Skim.prototype.onput = function(doc) {
   readmeTrim(doc)
 }
 
-Skim.prototype.onCuttleComplete = function(doc, results) {
+Skim.prototype.onCuttleComplete = function(change, results) {
+  var doc = change.doc
   var att = doc._attachments || {}
   var k = Object.keys(att).filter(function (a) {
     // don't do putbacks for {skip:true} attachments
@@ -132,25 +142,31 @@ Skim.prototype.onCuttleComplete = function(doc, results) {
 
   if (!k.length && !extraReadmes.length && this.skim === this.db) {
     // no disallowed attachments, just leave as-is
-    return MantaCouch.prototype.onCuttleComplete.call(this, doc, results)
+    return MantaCouch.prototype.onCuttleComplete.call(this, change, results)
   }
 
-  delete doc._attachments
+  // It's easier if we always have an _attachments, even if empty
+  doc._attachments = {}
 
-  this.putBack(doc, results)
+  this.putBack(change, results)
 }
 
-Skim.prototype.putBack = function(doc, results) {
+Skim.prototype.putBack = function(change, results) {
+  var doc = change.doc
   var p = this.skim + '/' + encodeURIComponent(doc._id)
 
   // If this isn't a putBACK, then treat it like a replication job
   // If someone wrote something else, go ahead and be in conflict.
+  // If we're putting back to the same db, then there's no need to
+  // specify the _revisions, since we're letting Couch manage the
+  // revision chain as a new edit on top of the existing one.
   if (this.db !== this.skim)
     p += '?new_edits=false'
+  else
+    delete doc._revisions
 
   p = url.parse(p)
 
-  delete doc._json
   var body = new Buffer(JSON.stringify(doc), 'utf8')
   p.method = 'PUT'
   p.headers = {
@@ -162,14 +178,16 @@ Skim.prototype.putBack = function(doc, results) {
   // put the attachment-free document back to the database url
   hh.request(p, parse(function(er, data, res) {
     // If the db and skim are the same, then a 409 is not a problem,
-    // because whatever that other change was, it'll just get skimmed again,
-    // and then eventually go in nicely.
+    // because whatever that other change was, it'll just get skimmed
+    // again, and then eventually go in nicely.
+    // If they AREN'T the same, then this is super weird, because we PUT
+    // with ?new_edits=false, so 409 should be impossible.
     if (er && er.statusCode === 409 && this.skim === this.db)
       er = null
 
     if (er)
       this.emit('error', er)
     else
-      MantaCouch.prototype.onCuttleComplete.call(this, doc, results)
+      MantaCouch.prototype.onCuttleComplete.call(this, change, results)
   }.bind(this))).end(body)
 }

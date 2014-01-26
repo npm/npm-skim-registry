@@ -5,7 +5,7 @@
   "main": "skim.js",
   "dependencies": {
     "dashdash": "~1.4.0",
-    "mcouch": "~1.0.6",
+    "mcouch": "~2.0.1",
     "manta-client": "~1.0.5",
     "http-https": "~1.0.0",
     "parse-json-response": "~1.0.0",

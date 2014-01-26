@@ -79,14 +79,14 @@ Skim({
   delete: del,
   skim: skim,
   registry: registry
-}).on('put', function(doc) {
-  console.log('PUT %s', doc._id);
-}).on('rm', function(doc) {
-  console.log('RM %s', doc._id);
-}).on('send', function(doc, file) {
-  console.log('-> sent %s/%s', doc._id, file.name);
-}).on('delete', function(doc, remote) {
-  console.log('-> deleted %s/%s', doc._id, remote);
-}).on('putBack', function(doc) {
-  console.error('-> putback %s', doc._id);
+}).on('put', function(change) {
+  console.log('PUT %s', change.id);
+}).on('rm', function(change) {
+  console.log('RM %s', change.id);
+}).on('send', function(change, file) {
+  console.log('-> sent %s/%s', change.id, file.name);
+}).on('delete', function(change, remote) {
+  console.log('-> deleted %s/%s', change.id, remote);
+}).on('putBack', function(change) {
+  console.error('-> putback %s', change.id);
 });
