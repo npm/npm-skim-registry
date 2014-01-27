@@ -44,11 +44,25 @@ function Skim(opts) {
 
 Skim.prototype.put = function(change) {
   if (change.id.match(/^_design\//) && this.db !== this.skim) {
-    this.pause()
-    this.putBack(change, null)
+    this.putDesign(change)
   } else {
     return MantaCouch.prototype.put.apply(this, arguments)
   }
+}
+
+Skim.prototype.putDesign = function(change) {
+  this.pause()
+  var q = '?revs=true'
+  var opt = url.parse(this.db + '/' + change.id + q)
+  var req = hh.get(opt, parse(function(er, data, res) {
+    // If we get a 404, just assume it's been deleted
+    if (er && er.statusCode === 404)
+      return this.resume()
+    else if (er)
+      return this.emit('error', er)
+    change.doc = data
+    this.putBack(change, null)
+  }.bind(this)))
 }
 
 Skim.prototype.onRm = function(change, er) {
