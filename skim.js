@@ -56,7 +56,7 @@ Skim.prototype.onRm = function(change, er) {
   // If the db isn't the same as the skim, then presumably it's already
   // gone, and if the user was just deleting a conflict or something, we
   // don't want to completely delete the entire thing.
-  if (er || !change.id || this.db !== this.skim)
+  if (er || !change.id || this.db === this.skim)
     return MantaCouch.prototype.onRm.call(this, change, er)
 
   // Delete from the other before moving on.
@@ -68,7 +68,7 @@ Skim.prototype.onRm = function(change, er) {
     if (res.statusCode === 404)
       return MantaCouch.prototype.onRm.call(this, change, er)
 
-    var rev = res.headers.etag
+    var rev = res.headers.etag.replace(/^"|"$/g, '')
     var d = url.parse(this.skim + '/' + change.id + '?rev=' + rev)
     d.method = 'DELETE'
     hh.request(d, parse(function(er, data, res) {
@@ -78,7 +78,7 @@ Skim.prototype.onRm = function(change, er) {
         MantaCouch.prototype.onRm.call(this, change, er)
       else
         this.onRm(change, er)
-    }.bind(this)))
+    }.bind(this))).end()
   }.bind(this)).end()
 }
 
