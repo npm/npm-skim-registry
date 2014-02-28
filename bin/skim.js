@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 var createClient = require('manta-client');
+var http = require('http');
 var manta = require('manta');
 var Skim = require('../');
 var dashdash = require('dashdash');
@@ -28,8 +29,10 @@ var parser = dashdash.createParser({
       type: 'string',
       helpArg: 'URL',
       help: 'Target to write attachment free docs. ' +
-            'Defaults to put back into COUCHDB arg.' }
-
+            'Defaults to put back into COUCHDB arg.' },
+    { names: [ 'monitor', 'm' ],
+      type: 'number',
+      help: 'port for monitoring listener' }
   ].concat(manta.DEFAULT_CLI_OPTIONS)
 });
 
@@ -90,3 +93,30 @@ Skim({
 }).on('putBack', function(change) {
   console.error('-> putback %s', change.id);
 });
+
+
+if (opts.monitor) {
+  var package = require('../package.json');
+
+  var monitor = http.createServer(function(request, response) {
+    if (request.url === '/ping') {
+        response.end('OK');
+    } else if (request.url === '/status') {
+        var status = {
+          status:   'OK',
+          pid:      process.pid,
+          app:      process.title,
+          host:     process.env.SMF_ZONENAME,
+          uptime:   process.uptime(),
+          version:  package.version
+      };
+      response.statusCode = 200;
+      response.setHeader('content-type', 'application/json');
+      response.end(JSON.stringify(status));
+    } else {
+      response.status = 404;
+      response.end('');
+    }
+  });
+  monitor.listen(opts.monitor);
+}
