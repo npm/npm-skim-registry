@@ -1,6 +1,6 @@
 {
   "name": "npm-skim-registry",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Move attachments into Manta and out of the registry",
   "main": "skim.js",
   "dependencies": {
@@ -30,5 +30,8 @@
   ],
   "author": "Isaac Z. Schlueter <i@izs.me> (http://blog.izs.me/)",
   "license": "ISC",
-  "bin": "bin/skim.js"
+  "bin": "bin/skim.js",
+  "devDependencies": {
+    "tap": "^0.4.8"
+  }
 }
