@@ -11,13 +11,14 @@ var crypto      = require('crypto');
 var cuttlefish  = require('cuttlefish');
 var EE          = require('events').EventEmitter;
 var follow      = require('follow');
-var hh          = require('http-https')
-var parse       = require('parse-json-response')
+var fs          = require('fs');
+var hh          = require('http-https');
+var parse       = require('parse-json-response');
 var PassThrough = require('stream').PassThrough;
-var path        = require('path')
-var readmeTrim  = require('npm-registry-readme-trim')
-var url         = require('url')
-var util        = require('util')
+var path        = require('path');
+var readmeTrim  = require('npm-registry-readme-trim');
+var url         = require('url');
+var util        = require('util');
 
 module.exports = Skim
 
@@ -34,7 +35,6 @@ function Skim(opts) {
     opts.db = opts.fat
 
   this.opts = opts;
-
 
   if (!opts.client || opts.client.constructor.name !== 'MantaClient')
     throw new TypeError('opts.client of type MantaClient is required');
@@ -253,7 +253,7 @@ Skim.prototype.onRm = function(change, er) {
   // gone, and if the user was just deleting a conflict or something, we
   // don't want to completely delete the entire thing.
   if (er || !change.id || this.db === this.skim)
-    return MantaCouch.prototype.onRm.call(this, change, er)
+    return this._onRm(change, er)
 
   // Delete from the other before moving on.
   // To remove all conflicts, keep deleting until 404
@@ -413,8 +413,9 @@ Skim.prototype.putBack = function(change, results) {
 }
 
 Skim.prototype.getMd5 = function(change, json, file, cb) {
+  var md5
   if (file.name === 'doc.json')
-    var md5 = crypto.createHash('md5').update(json).digest('base64');
+    md5 = crypto.createHash('md5').update(json).digest('base64');
   cb(null, md5);
 }
 
