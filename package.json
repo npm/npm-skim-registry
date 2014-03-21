@@ -10,7 +10,9 @@
     "http-https": "~1.0.0",
     "parse-json-response": "~1.0.0",
     "manta": "~1.2.6",
-    "npm-registry-readme-trim": "~1.0.0"
+    "npm-registry-readme-trim": "~1.0.0",
+    "follow": "^0.10.4",
+    "cuttlefish": "^1.3.3"
   },
   "scripts": {
     "test": "tap test/*.js"
