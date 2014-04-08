@@ -8,11 +8,11 @@
 
 var assert      = require('assert');
 var crypto      = require('crypto');
-var cuttlefish  = require('cuttlefish');
 var EE          = require('events').EventEmitter;
 var follow      = require('follow');
 var fs          = require('fs');
 var hh          = require('http-https');
+var multifs     = require('multi-fs');
 var parse       = require('parse-json-response');
 var PassThrough = require('stream').PassThrough;
 var path        = require('path');
@@ -36,8 +36,8 @@ function Skim(opts) {
 
     this.opts = opts;
 
-    if (!opts.client || opts.client.constructor.name !== 'MantaClient')
-        throw new TypeError('opts.client of type MantaClient is required');
+    if (!opts.client || opts.client.constructor.name !== 'MultiFS')
+        throw new TypeError('opts.client of type MultiFS is required');
     this.client = opts.client;
 
     if (opts.seqFile && typeof opts.seqFile !== 'string')
@@ -173,7 +173,7 @@ Skim.prototype.put = function(change) {
     if (change.id !== encodeURIComponent(change.id)) {
         console.error('WARNING: Skipping %j\nWARNING: See %s', change.id,
                                  'https://github.com/joyent/node-manta/issues/157')
-        return
+        return;
     }
 
     this.pause();
@@ -209,19 +209,18 @@ Skim.prototype._put = function(change) {
         length: json.length
     };
 
-    cuttlefish({
-        path: this.path + '/' + doc._id,
-        client: this.client,
-        files: files,
-        getMd5: this.getMd5.bind(this, change, json),
-        request: this.getFile.bind(this, change, json),
-        delete: this.delete,
-        concurrency: this.concurrency
-    })
-        .on('send', this.emit.bind(this, 'send', change))
-        .on('delete', this.emit.bind(this, 'delete', change))
-        .on('error', this.emit.bind(this, 'error'))
-        .on('complete', this.onCuttleComplete.bind(this, change));
+    var self = this;
+    var count = Object.keys(files).length;
+    Object.keys(files).each(function(attachment) {
+        self.getFile(change, json, attachment, function(err, data) {
+            var destpath = path.join(self.path, attachment.name);
+            self.client.writeFilep(destpath, data, function()
+            {
+                if (--count === 0)
+                    self.onPutFilesComplete(change);
+            });
+        });
+    });
 }
 
 Skim.prototype.putDesign = function(change) {
@@ -333,7 +332,7 @@ Skim.prototype.onput = function(change) {
     readmeTrim(doc)
 }
 
-Skim.prototype.onCuttleComplete = function(change, results) {
+Skim.prototype.onPutFilesComplete = function(change, results) {
     var doc = change.doc
     var att = doc._attachments || {}
     var k = Object.keys(att).filter(function (a) {
@@ -347,7 +346,7 @@ Skim.prototype.onCuttleComplete = function(change, results) {
 
     if (!k.length && !extraReadmes.length && this.skim === this.db) {
         // no disallowed attachments, just leave as-is
-        return this._onCuttleComplete(change, results)
+        return this.completeAndResume(change, results)
     }
 
     // It's easier if we always have an _attachments, even if empty
@@ -356,8 +355,7 @@ Skim.prototype.onCuttleComplete = function(change, results) {
     this.putBack(change, results)
 }
 
-
-Skim.prototype._onCuttleComplete = function(change, results) {
+Skim.prototype.completeAndResume = function completeAndResume(change, results) {
     this.emit('complete', change, results);
     this.resume();
 };
@@ -408,7 +406,7 @@ Skim.prototype.putBack = function(change, results) {
         if (er)
             this.emit('error', er)
         else
-            this._onCuttleComplete(change, results)
+            this.completeAndResume(change, results)
     }.bind(this))).end(body)
 }
 
@@ -451,4 +449,3 @@ Skim.prototype.resume = function() {
     this.saveSeq();
     this.follow.resume();
 }
-
