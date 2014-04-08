@@ -211,16 +211,25 @@ Skim.prototype._put = function(change) {
 
     var self = this;
     var count = Object.keys(files).length;
-    Object.keys(files).each(function(attachment) {
-        self.getFile(change, json, attachment, function(err, data) {
-            var destpath = path.join(self.path, attachment.name);
+
+    Object.keys(files).forEach(function(fname) {
+            self.getFile(change, json, fname, function(err, data) {
+            var destpath = path.join(self.path, fname);
             self.client.writeFilep(destpath, data, function()
             {
+                self.emit('send', change, destpath);
                 if (--count === 0)
                     self.onPutFilesComplete(change);
             });
         });
     });
+
+    /*
+    .on('send', this.emit.bind(this, 'send', change))
+    .on('delete', this.emit.bind(this, 'delete', change))
+    .on('error', this.emit.bind(this, 'error'))
+    .on('complete', cb);
+    */
 }
 
 Skim.prototype.putDesign = function(change) {
@@ -418,7 +427,7 @@ Skim.prototype.getMd5 = function(change, json, file, cb) {
 }
 
 Skim.prototype.getFile = function(change, json, file, cb) {
-    if (file.name === 'doc.json')
+    if (file === 'doc.json')
         this.streamDoc(json, file, cb)
     else
         this.getAttachment(change, file, cb)
@@ -432,7 +441,7 @@ Skim.prototype.streamDoc = function(json, file, cb) {
 
 Skim.prototype.getAttachment = function(change, file, cb) {
     var a = path.dirname(file.name).replace(/^_attachments/, change.id);
-    var f = encodeURIComponent(path.basename(file.name))
+    var f = encodeURIComponent(path.basename(file))
     a += '/' + f
     this.emit('attachment', change, file);
     var u = this.db + '/' + a;

@@ -15,7 +15,7 @@
     "parse-json-response": "~1.0.0"
   },
   "scripts": {
-    "test": "tap test/*.js"
+    "test": "tap test/test*.js"
   },
   "repository": {
     "type": "git",
