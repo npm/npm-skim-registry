@@ -50,18 +50,26 @@ function testEvents(evs, t) {
     }).on('rm', function(change) {
         ev('rm %s', change.id);
     }).on('send', function(change, file) {
-        ev('sent %s/%s', change.id, file);
+        ev('sent %s', file);
     }).on('delete', function(change, file) {
-        ev('delete %s/%s', change.id, file);
+        ev('delete %s', file);
     }).on('attachment', function(change, file) {
-        ev('attachment %s/%s', change.id, file);
+        ev('attachment %s', file);
     }).on('complete', function(change, results) {
         ev('complete %s', change.id);
     });
 }
 
 test('check destinations', function(t) {
-    t.end();
+
+    // verify that files are where we expect them in the multifs client
+    // 'test-package/_attachments/test-package-0.0.0.tgz'
+    // get MD5s for it
+
+    client.md5('test-package/_attachments/test-package-0.0.0.tgz', function(err, res) {
+        if (err) throw(err);
+        t.end();
+    });
 })
 
 test('check doc after skim', function(t) {
@@ -79,5 +87,5 @@ test('close client', function(t) {
     client.close();
     t.end();
     // TODO okay but this means I have a bug
-    process.exit();
+    // process.exit();
 });

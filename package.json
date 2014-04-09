@@ -34,6 +34,8 @@
   "license": "ISC",
   "bin": "bin/skim.js",
   "devDependencies": {
+    "mkdirp": "^0.3.5",
+    "rimraf": "^2.2.6",
     "tap": "^0.4.8"
   }
 }

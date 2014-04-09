@@ -213,11 +213,17 @@ Skim.prototype._put = function(change) {
     var count = Object.keys(files).length;
 
     Object.keys(files).forEach(function(fname) {
+            fname = path.join(doc.name, fname);
             self.getFile(change, json, fname, function(err, data) {
             var destpath = path.join(self.path, fname);
-            self.client.writeFilep(destpath, data, function()
+
+            self.client.writeFilep(destpath, data, function(err)
             {
-                self.emit('send', change, destpath);
+                if (err)
+                    self.emit('error', err);
+                else
+                    self.emit('send', change, destpath);
+
                 if (--count === 0)
                     self.onPutFilesComplete(change);
             });
@@ -421,13 +427,13 @@ Skim.prototype.putBack = function(change, results) {
 
 Skim.prototype.getMd5 = function(change, json, file, cb) {
     var md5
-    if (file.name === 'doc.json')
+    if (file.match(/\/doc\.json$/))
         md5 = crypto.createHash('md5').update(json).digest('base64');
     cb(null, md5);
 }
 
 Skim.prototype.getFile = function(change, json, file, cb) {
-    if (file === 'doc.json')
+    if (file.match(/\/doc\.json$/))
         this.streamDoc(json, file, cb)
     else
         this.getAttachment(change, file, cb)

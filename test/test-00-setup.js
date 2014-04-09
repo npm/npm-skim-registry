@@ -1,27 +1,40 @@
 // start the couchdb spinning as a detached child process.
 // the zz-teardown.js test kills it.
 
-var spawn = require('child_process').spawn
-var test = require('tap').test
-var path = require('path')
-var fs = require('fs')
-var http = require('http')
-var url = require('url')
-var parse = require('parse-json-response')
+var fs = require('fs');
+var http = require('http');
+var mkdirp = require('mkdirp');
+var parse = require('parse-json-response');
+var path = require('path');
+var spawn = require('child_process').spawn;
+var test = require('tap').test;
+var url = require('url');
 
 // just in case it was still alive from a previous run, kill it.
-require('./test-zz-teardown.js')
+require('./test-zz-teardown.js');
 
 // just make sure we can load a client, or crash early
-require('./client.js')
+require('./client.js');
 
 // run with the cwd of the main program.
-var cwd = path.dirname(__dirname)
+var cwd = path.dirname(__dirname);
 
-var conf = path.resolve(__dirname, 'fixtures', 'couch.ini')
-var pidfile = path.resolve(__dirname, 'fixtures', 'pid')
-var logfile = path.resolve(__dirname, 'fixtures', 'couch.log')
-var started = /Apache CouchDB has started on http:\/\/127\.0\.0\.1:15984\/\n$/
+var conf = path.resolve(__dirname, 'fixtures', 'couch.ini');
+var pidfile = path.resolve(__dirname, 'fixtures', 'pid');
+var logfile = path.resolve(__dirname, 'fixtures', 'couch.log');
+var started = /Apache CouchDB has started on http:\/\/127\.0\.0\.1:15984\/\n$/;
+
+var fix = path.join(__dirname, 'fixtures', 'destinations');
+test('make fixture dirs', function(t)
+{
+    for (var i = 0; i < 9; i++)
+    {
+        mkdirp.sync(path.join(fix, '' + i));
+    }
+    t.pass('ok');
+    t.end();
+});
+
 
 test('start couch as a zombie child', function (t) {
     var fd = fs.openSync(pidfile, 'wx')

@@ -5,18 +5,18 @@ var
 
 if (!process.env.MANTA_KEY_ID || !process.env.MANTA_USER || !process.env.MANTA_URL)
 {
-        console.error('not ok - need manta environs')
-        process.exit(1)
+    console.error('not ok - need manta environs')
+    process.exit(1)
 }
 
 if (!process.env.SSH_AUTH_SOCK)
 {
-        console.error('not ok - only ssh-agent authentication is supported')
-        process.exit(1)
+    console.error('not ok - only ssh-agent authentication is supported')
+    process.exit(1)
 }
 
 
-var base = path.resolve(__dirname, 'fixtures')
+var base = path.resolve(__dirname, 'fixtures/destinations')
 
 var cwd = process.cwd()
 var locshort = base
@@ -31,10 +31,10 @@ if (home && base.indexOf(home) === 0)
 var targets = [
     { type: 'fs', path: base + '/0' },
     { type: 'fs', path: locshort + '/1' },
-/*
     base + '/2',
     locshort + '/3',
     '~/' + homeshort + '/4',
+/*
     'ssh://localhost:' + homeshort + '/5',
     'ssh://localhost' + base + '/6',
     {
