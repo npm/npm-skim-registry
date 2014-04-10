@@ -52,7 +52,7 @@ test('craigslist (well, how do you get rid of YOUR couches?)', function (t) {
 
 test('cleanup multifishes', function(t) {
     var client = require('./client.js');
-    client.rmr('npm-skim-registry-testing', function(er) {
+    client.rmr('registry-testing', function(er) {
         if (er && (er.statusCode !== 404 && er.code !== 'ENOENT'))
             throw er;
         t.pass('done');

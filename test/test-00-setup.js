@@ -1,14 +1,14 @@
-// start the couchdb spinning as a detached child process.
-// the zz-teardown.js test kills it.
-
-var fs = require('fs');
-var http = require('http');
-var mkdirp = require('mkdirp');
-var parse = require('parse-json-response');
-var path = require('path');
-var spawn = require('child_process').spawn;
-var test = require('tap').test;
-var url = require('url');
+var
+    fs     = require('fs'),
+    http   = require('http'),
+    Manta  = require('manta-client'),
+    mkdirp = require('mkdirp'),
+    parse  = require('parse-json-response'),
+    path   = require('path'),
+    spawn  = require('child_process').spawn,
+    test   = require('tap').test,
+    url    = require('url')
+    ;
 
 // just in case it was still alive from a previous run, kill it.
 require('./test-zz-teardown.js');
@@ -25,16 +25,30 @@ var logfile = path.resolve(__dirname, 'fixtures', 'couch.log');
 var started = /Apache CouchDB has started on http:\/\/127\.0\.0\.1:15984\/\n$/;
 
 var fix = path.join(__dirname, 'fixtures', 'destinations');
-test('make fixture dirs', function(t)
-{
-    for (var i = 0; i < 9; i++)
-    {
+test('make fixture dirs', function(t) {
+    for (var i = 0; i < 9; i++) {
         mkdirp.sync(path.join(fix, '' + i));
     }
     t.pass('ok');
     t.end();
 });
 
+test('set up manta directories', function(t) {
+    var manta = Manta(process.argv, process.env);
+    var count = 0; // async on the cheap
+
+    ['9', '10', '11', '12'].forEach(function(d) {
+        manta.mkdirp('~~/stor/registry-testing/' + d, function(err) {
+            if (err) throw(err);
+            count++;
+            if (count === 4) {
+                manta.close();
+                t.pass('multifishes');
+                t.end();
+            }
+        });
+    });
+});
 
 test('start couch as a zombie child', function (t) {
     var fd = fs.openSync(pidfile, 'wx')

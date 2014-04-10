@@ -1,12 +1,15 @@
-var client = require('./client.js')
-var http = require('http')
-var parse = require('parse-json-response')
-var skim = require('../skim.js')
-var test = require('tap').test
-var url = require('url')
-var util = require('util');
+var
+    client = require('./client.js'),
+    http   = require('http'),
+    parse  = require('parse-json-response'),
+    skim   = require('../skim.js'),
+    test   = require('tap').test,
+    url    = require('url'),
+    util   = require('util')
+    ;
 
 test('first sync', function(t) {
+
     var evs =
         [ 'put test-package',
             'attachment test-package/_attachments/test-package-0.0.0.tgz',
@@ -57,15 +60,14 @@ function testEvents(evs, t) {
         ev('attachment %s', file);
     }).on('complete', function(change, results) {
         ev('complete %s', change.id);
+    }).on('error', function(err) {
+        console.log(err.stackTrace());
+        throw(err);
     });
 }
 
 test('check destinations', function(t) {
-
-    // verify that files are where we expect them in the multifs client
-    // 'test-package/_attachments/test-package-0.0.0.tgz'
-    // get MD5s for it
-
+    // verify that files are where we expect them in the multifs client & their md5s match
     client.md5('test-package/_attachments/test-package-0.0.0.tgz', function(err, res) {
         if (err) throw(err);
         t.end();
@@ -86,6 +88,4 @@ test('check doc after skim', function(t) {
 test('close client', function(t) {
     client.close();
     t.end();
-    // TODO okay but this means I have a bug
-    // process.exit();
 });

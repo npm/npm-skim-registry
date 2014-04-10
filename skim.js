@@ -213,29 +213,29 @@ Skim.prototype._put = function(change) {
     var count = Object.keys(files).length;
 
     Object.keys(files).forEach(function(fname) {
-            fname = path.join(doc.name, fname);
-            self.getFile(change, json, fname, function(err, data) {
-            var destpath = path.join(self.path, fname);
 
-            self.client.writeFilep(destpath, data, function(err)
-            {
-                if (err)
-                    self.emit('error', err);
-                else
-                    self.emit('send', change, destpath);
+        fname = path.join(doc.name, fname);
+        self.getFile(change, json, fname, function(err, data) {
 
-                if (--count === 0)
-                    self.onPutFilesComplete(change);
+            var destFile = path.join(self.path, fname);
+            var destdir = path.dirname(destFile);
+
+            self.client.mkdirp(destdir, function(err) {
+
+                if (err) return self.emit('error', err);
+
+                self.client.writeFile(destFile, data, function(err) {
+                    if (err)
+                        self.emit('error', err);
+                    else
+                        self.emit('send', change, destFile);
+
+                    if (--count === 0)
+                        self.onPutFilesComplete(change);
+                });
             });
         });
     });
-
-    /*
-    .on('send', this.emit.bind(this, 'send', change))
-    .on('delete', this.emit.bind(this, 'delete', change))
-    .on('error', this.emit.bind(this, 'error'))
-    .on('complete', cb);
-    */
 }
 
 Skim.prototype.putDesign = function(change) {
@@ -294,8 +294,10 @@ Skim.prototype.onRm = function(change, er) {
 }
 
 Skim.prototype._onRm = function(change, er) {
-    if (!er || er.statusCode === 404)
+    if (!er || er.statusCode === 404) {
+        this.emit('delete', change);
         this.resume();
+    }
     else
         this.emit('error', er);
 }
