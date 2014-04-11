@@ -57,7 +57,6 @@ test('cleanup multifishes', function(t) {
             throw er;
         t.pass('done');
         t.end();
-        client.close();
     })
 });
 

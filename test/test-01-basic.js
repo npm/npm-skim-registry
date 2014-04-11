@@ -71,8 +71,9 @@ function testEvents(evs, t) {
 
 test('check destinations', function(t) {
     // verify that files are where we expect them in the multifs client & their md5s match
-    client.md5('test-package/_attachments/test-package-0.0.0.tgz', function(err, res) {
+    client.md5('test-package/_attachments/test-package-0.0.0.tgz', function(err, res, data) {
         if (err) throw(err);
+        console.log(res);
         t.end();
     });
 })

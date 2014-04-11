@@ -36,18 +36,11 @@ test('make fixture dirs', function(t) {
 
 test('set up manta directories', function(t) {
     var manta = Manta(process.argv, process.env);
-    var count = 0; // async on the cheap
-
-    ['9', '10', '11', '12'].forEach(function(d) {
-        manta.mkdirp('~~/stor/registry-testing/' + d, function(err) {
-            if (err) throw(err);
-            count++;
-            if (count === 4) {
-                manta.close();
-                t.pass('multifishes');
-                t.end();
-            }
-        });
+    manta.mkdirp('~~/stor/registry-testing/', function(err) {
+        if (err) throw(err);
+        t.pass('multifishes');
+        t.end();
+        manta.close();
     });
 });
 

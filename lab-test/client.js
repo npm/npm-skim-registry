@@ -15,42 +15,23 @@ if (!process.env.SSH_AUTH_SOCK)
     process.exit(1);
 }
 
-var base = path.resolve(__dirname, 'fixtures/destinations');
+var base = path.resolve(__dirname, 'tmp/registry-testing');
 
 var cwd = process.cwd()
 var locshort = base
 if (cwd && base.indexOf(cwd) === 0)
-    locshort = base.substr(cwd.length).replace(/^\/+/, '')
+    locshort = base.substr(cwd.length).replace(/^\/+/, '');
 
 var home = process.env.HOME;
 var homeshort = base;
 if (home && base.indexOf(home) === 0)
     homeshort = base.substr(home.length).replace(/^\/+/, '');
 
-var targets = [
-/*
+var targets =
+[
     { type: 'fs', path: base + '/0' },
-    { type: 'fs', path: locshort + '/1' },
-    base + '/2',
-    locshort + '/3',
-    '~/' + homeshort + '/4',
-
-    'ssh://localhost:' + homeshort + '/5',
-*/
-    'ssh://localhost' + base + '/6',
-    {
-        type: 'ssh',
-        agent: process.env.SSH_AUTH_SOCK,
-        path: homeshort + '/7'
-    },
-/*
-    {
-        type: 'ssh',
-        agent: process.env.SSH_AUTH_SOCK,
-        path: base + '/8'
-    },
-    '~~/stor/registry-testing/9',
-*/
+    'ssh://localhost:' + homeshort + '/1',
+    '~~/stor/registry-testing/2',
 ];
 
 module.exports = new MultiFS(targets);

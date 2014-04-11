@@ -1,8 +1,10 @@
 {
   "name": "npm-skim-registry",
-  "version": "1.0.2",
   "description": "Move attachments into Manta and out of the registry",
-  "main": "skim.js",
+  "version": "1.0.2",
+  "author": "Isaac Z. Schlueter <i@izs.me> (http://blog.izs.me/)",
+  "bin": "bin/skim.js",
+  "bugs": "https://github.com/npm/npm-skim-registry/issues",
   "dependencies": {
     "cuttlefish": "^1.3.3",
     "dashdash": "~1.4.0",
@@ -14,13 +16,14 @@
     "npm-registry-readme-trim": "~1.0.0",
     "parse-json-response": "~1.0.0"
   },
-  "scripts": {
-    "test": "tap test/test*.js"
+  "devDependencies": {
+    "lab": "^3.0.1",
+    "mkdirp": "^0.3.5",
+    "must": "^0.11.0",
+    "rimraf": "^2.2.6",
+    "tap": "^0.4.8"
   },
-  "repository": {
-    "type": "git",
-    "url": "git://github.com/isaacs/npm-mcouch"
-  },
+  "homepage": "https://github.com/npm/npm-skim-registry",
   "keywords": [
     "npm",
     "manta",
@@ -30,12 +33,14 @@
     "registry",
     "attachments"
   ],
-  "author": "Isaac Z. Schlueter <i@izs.me> (http://blog.izs.me/)",
   "license": "ISC",
-  "bin": "bin/skim.js",
-  "devDependencies": {
-    "mkdirp": "^0.3.5",
-    "rimraf": "^2.2.6",
-    "tap": "^0.4.8"
+  "main": "skim.js",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/npm/npm-skim-registry"
+  },
+  "scripts": {
+    "test": "lab -v lab-test/test*.js",
+    "tap": "tap test/test*.js"
   }
 }
