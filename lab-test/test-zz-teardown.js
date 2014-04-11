@@ -54,7 +54,7 @@ describe('cleanup', function()
 
     it('can cleanup the destination directories', function(done)
     {
-        rimraf(path.join(__dirname, 'tmp', 'registry-testing'), function(err)
+        rimraf(path.join(__dirname, 'tmp'), function(err)
         {
             demand(err).be.falsy();
             done();
