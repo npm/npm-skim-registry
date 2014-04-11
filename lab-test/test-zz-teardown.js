@@ -23,7 +23,8 @@ describe('cleanup', function()
 {
     it('can kill the couch zombie', function(done)
     {
-        try { var pid = fs.readFileSync(pidfile); } catch (er) {}
+        var pid;
+        try { pid = fs.readFileSync(pidfile); } catch (err) {}
 
         if (pid)
         {
