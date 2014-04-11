@@ -30,8 +30,11 @@ if (home && base.indexOf(home) === 0)
 var targets =
 [
     { type: 'fs', path: base + '/0' },
-    // 'ssh://localhost:' + homeshort + '/1',
+    'ssh://localhost:' + homeshort + '/1',
     '~~/stor/registry-testing/2',
 ];
 
-module.exports = new MultiFS(targets);
+var createClient = module.exports = function createClient()
+{
+    return new MultiFS(targets);
+};

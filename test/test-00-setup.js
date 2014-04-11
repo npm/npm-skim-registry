@@ -18,13 +18,6 @@ var
 
 describe('setup', function()
 {
-    it('can create a multi-fs client', function(done)
-    {
-        var client = require('./client.js');
-        client.close();
-        done();
-    });
-
     it('can create test destination directories', function(done)
     {
         var fix = path.join(__dirname, 'tmp', 'registry-testing');

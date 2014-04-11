@@ -14,13 +14,15 @@ var
     util     = require('util')
     ;
 
+var createTestClient = require('./client');
+
 describe('skimming', function()
 {
     var client;
 
     before(function(done)
     {
-        client = require('./client.js');
+        client = createTestClient();
         done();
     });
 
@@ -71,11 +73,12 @@ describe('skimming', function()
         .on('complete', function(change, results) { checkEvent('complete %s', change.id); })
         .on('error', function(err)
         {
+            console.log('woah skimmer threw an error!');
             if (err.stackTrace)
                 console.error(err.stackTrace());
             else
                 console.error(err);
-            throw(err);
+            demand(err).be.falsy();
         });
     });
 

@@ -219,7 +219,6 @@ Skim.prototype._put = function(change) {
 
             var destFile = path.join(self.path, fname);
             var destdir = path.dirname(destFile);
-
             self.client.mkdirp(destdir, function(err) {
 
                 if (err) return self.emit('error', err);
