@@ -39,6 +39,7 @@
     "url": "git://github.com/npm/npm-skim-registry"
   },
   "scripts": {
-    "test": "lab -v lab-test/test*.js"
+    "test": "lab test/test*.js",
+    "coverage": "lab -vc test/test*.js"
   }
 }
