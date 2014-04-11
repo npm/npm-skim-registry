@@ -24,7 +24,7 @@ describe('skimming', function()
         done();
     });
 
-    it('emits expected events on a first sync', function(done)
+    it('emits expected events on a first sync', { timeout: 20000 }, function(done)
     {
         var skimmer;
         var expected =
@@ -79,19 +79,19 @@ describe('skimming', function()
         });
     });
 
-    it('writes files with correct md5 sums', function(done)
+    it('writes files with correct md5 sums', { timeout: 10000 }, function(done)
     {
         var target = 'test-package/_attachments/test-package-0.0.0.tgz';
         client.md5(target, function(err, res, data)
         {
             demand(err).be.falsy();
-            console.log(res);
-            res.should.be.a.string();
+            res.must.be.a.string();
+            res.must.equal('d952d40c43c1f88387999986572ea0e1');
             done();
         });
     });
 
-    it('removes the attachment from couch', function(done)
+    it('removes the attachment from couch', { timeout: 10000 }, function(done)
     {
         var opts = url.parse('http://localhost:15984/registry/test-package');
         opts.headers = { 'connection': 'close' };
