@@ -14,7 +14,8 @@ var
 require('./test-zz-teardown.js');
 
 // just make sure we can load a client, or crash early
-require('./client.js');
+var client = require('./client.js');
+client.close();
 
 // run with the cwd of the main program.
 var cwd = path.dirname(__dirname);

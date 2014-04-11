@@ -61,7 +61,10 @@ function testEvents(evs, t) {
     }).on('complete', function(change, results) {
         ev('complete %s', change.id);
     }).on('error', function(err) {
-        console.log(err.stackTrace());
+        if (err.stackTrace)
+            console.error(err.stackTrace());
+        else
+            console.error(err);
         throw(err);
     });
 }

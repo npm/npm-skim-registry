@@ -33,8 +33,8 @@ var targets = [
     base + '/2',
     locshort + '/3',
     '~/' + homeshort + '/4',
-/*
     'ssh://localhost:' + homeshort + '/5',
+/*
     'ssh://localhost' + base + '/6',
     {
         type: 'ssh',
