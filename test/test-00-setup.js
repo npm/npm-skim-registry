@@ -16,14 +16,6 @@ var
     url      = require('url')
     ;
 
-/*
-
-npm start --npm-registry-couchapp:couch=http://admin:admin@localhost:15984/registry
-npm run load --npm-registry-couchapp:couch=http://admin:admin@localhost:15984/registry
-npm run copy --npm-registry-couchapp:couch=http://admin:admin@localhost:15984/registry
-
-*/
-
 describe('setup', function()
 {
     it('can create test destination directories', function(done)
@@ -101,65 +93,5 @@ describe('setup', function()
             done();
         });
     });
-
-/*
-    The following two tests provision part of the registry db fixture.
-
-    it('can create a test db', function(done)
-    {
-        var u = url.parse('http://admin:admin@localhost:15984/registry');
-        u.method = 'PUT';
-        http.request(u, function(response)
-        {
-            response.statusCode.must.equal(201);
-            var c = '';
-            response.setEncoding('utf8');
-            response.on('data', function(chunk) { c += chunk; });
-            response.on('end', function()
-            {
-                c = JSON.parse(c);
-                c.must.be.an.object();
-                c.must.have.property('ok');
-                c.ok.must.be.true();
-                done();
-            });
-        }).end();
-    });
-
-    it('can create a test record', function(done)
-    {
-        var testPkg = require('./fixtures/test-package.json');
-        var tf = path.resolve(__dirname, 'fixtures/test-package-0.0.0.tgz');
-        var tgzData = fs.readFileSync(tf, 'base64');
-        testPkg._attachments['test-package-0.0.0.tgz'].data = tgzData;
-        testPkg._attachments['test-package-0.0.0.tgz'].stub = false;
-        testPkg._attachments['test-package-0.0.0-blerg.tgz'] =
-            JSON.parse(JSON.stringify(testPkg._attachments['test-package-0.0.0.tgz']));
-
-        var body = new Buffer(JSON.stringify(testPkg));
-
-        var u = url.parse('http://admin:admin@localhost:15984/registry/test-package');
-        u.method = 'PUT';
-        u.headers =
-        {
-            'content-type': 'application/json',
-            'content-length': body.length,
-            connection: 'close'
-        };
-
-        http.request(u, function(response)
-        {
-            response.statusCode.must.equal(201);
-            if (response.statusCode !== 201)
-                response.pipe(process.stderr)
-            done();
-        })
-        .on('error', function(err)
-        {
-            demand(err).be.falsy();
-        })
-        .end(body);
-    });
-    */
 
 });
