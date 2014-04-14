@@ -18,16 +18,9 @@ var createTestClient = require('./client');
 
 describe('skimming', function()
 {
-    var client;
-
-    before(function(done)
-    {
-        client = createTestClient();
-        done();
-    });
-
     it('emits expected events on a first sync', { timeout: 20000 }, function(done)
     {
+        var client = createTestClient();
         var skimmer;
         var expected =
         {
@@ -82,14 +75,16 @@ describe('skimming', function()
         });
     });
 
-    it('writes files with correct md5 sums', { timeout: 10000 }, function(done)
+    it('writes files with correct md5 sums', { timeout: 20000 }, function(done)
     {
+        var client = createTestClient();
         var target = 'test-package/_attachments/test-package-0.0.0.tgz';
         client.md5(target, function(err, res, data)
         {
             demand(err).be.falsy();
             res.must.be.a.string();
             res.must.equal('d952d40c43c1f88387999986572ea0e1');
+            client.close();
             done();
         });
     });
@@ -105,11 +100,5 @@ describe('skimming', function()
             data.must.not.have.property('_attachments');
             done();
         }));
-    });
-
-    after(function(done)
-    {
-        client.close();
-        done();
     });
 });
