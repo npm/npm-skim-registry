@@ -16,6 +16,14 @@ var
     url      = require('url')
     ;
 
+/*
+
+npm start --npm-registry-couchapp:couch=http://admin:admin@localhost:15984/registry
+npm run load --npm-registry-couchapp:couch=http://admin:admin@localhost:15984/registry
+npm run copy --npm-registry-couchapp:couch=http://admin:admin@localhost:15984/registry
+
+*/
+
 describe('setup', function()
 {
     it('can create test destination directories', function(done)
@@ -26,7 +34,7 @@ describe('setup', function()
         done();
     });
 
-    it('can create a manta destination directory', function(done)
+    it('can create a manta destination directory', { timeout: 20000 }, function(done)
     {
         var manta = Manta(process.argv, process.env);
         manta.mkdirp('~~/stor/registry-testing/', function(err)
@@ -41,9 +49,24 @@ describe('setup', function()
     var cwd = path.dirname(__dirname);
 
     var conf = path.resolve(__dirname, 'fixtures', 'couch.ini');
-    var pidfile = path.resolve(__dirname, 'fixtures', 'pid');
-    var logfile = path.resolve(__dirname, 'fixtures', 'couch.log');
+    var pidfile = path.resolve(__dirname, 'couch-tmp', 'pid');
+    var logfile = path.resolve(__dirname, 'couch-tmp', 'couch.log');
     var started = /Apache CouchDB has started on http:\/\/127\.0\.0\.1:15984\/\n$/;
+
+    it('can set up couch tmp directory', function(done)
+    {
+        fs.mkdirSync(path.join(__dirname, 'couch-tmp'));
+
+        var files = ['_replicator.couch', '_users.couch', 'registry.couch'];
+        files.forEach(function(f)
+        {
+            var src = path.resolve(__dirname, 'fixtures', f);
+            var dest = path.resolve(__dirname, 'couch-tmp', f);
+            fs.writeFileSync(dest, fs.readFileSync(src))
+        });
+
+        done();
+    });
 
     it('can start couch as a zombie child', { timeout: 15000 }, function(done)
     {
@@ -78,6 +101,9 @@ describe('setup', function()
             done();
         });
     });
+
+/*
+    The following two tests provision part of the registry db fixture.
 
     it('can create a test db', function(done)
     {
@@ -127,6 +153,13 @@ describe('setup', function()
             if (response.statusCode !== 201)
                 response.pipe(process.stderr)
             done();
-        }).end(body);
+        })
+        .on('error', function(err)
+        {
+            demand(err).be.falsy();
+        })
+        .end(body);
     });
+    */
+
 });

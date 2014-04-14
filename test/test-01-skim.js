@@ -18,6 +18,59 @@ var createTestClient = require('./client');
 
 describe('skimming', function()
 {
+    it('requires an options object', function(done)
+    {
+        function shouldThrow() { return skim(); }
+        shouldThrow.must.throw(TypeError);
+        done();
+    });
+
+    it('requires a MultiFS client option', function(done)
+    {
+        function shouldThrow() { return skim({}); }
+        shouldThrow.must.throw(/MultiFS/);
+        done();
+    });
+
+    it('requires that a `seqFile` option be a string', function(done)
+    {
+        function shouldThrow() { return skim({ client: createTestClient(), seqFile: 20 }); }
+        shouldThrow.must.throw(/seqFile/);
+        done();
+    });
+
+    it('requires a url in opts.db', function(done)
+    {
+        function shouldThrow() { return skim({ client: createTestClient(), db: 'I am not a url' }); }
+        shouldThrow.must.throw(/is required/);
+        done();
+    });
+
+    it('requires a number if opts.inactivity_ms is provided', function(done)
+    {
+        function shouldThrow() { return skim(
+        {
+            client: createTestClient(),
+            db: 'http://localhost:15984/registry',
+            inactivity_ms: 'foo'
+        }); }
+        shouldThrow.must.throw(/type number/);
+        done();
+    });
+
+    it('requires a number if opts.seq is provided', function(done)
+    {
+        function shouldThrow() { return skim(
+        {
+            client: createTestClient(),
+            db: 'http://localhost:15984/registry',
+            seq: 'foo'
+        }); }
+        shouldThrow.must.throw(/type number/);
+        done();
+    });
+
+
     it('emits expected events on a first sync', { timeout: 20000 }, function(done)
     {
         var client = createTestClient();
@@ -101,4 +154,7 @@ describe('skimming', function()
             done();
         }));
     });
+
+    it('removes attachments on unpublish (if delete is set)');
+    it('does not remove attachments if delete is not set');
 });

@@ -11,18 +11,11 @@ var
     path     = require('path'),
     rimraf   = require('rimraf');
 
-var
-    pidfile = path.resolve(__dirname, 'fixtures', 'pid'),
-    _users  = path.resolve(__dirname, 'fixtures', '_users.couch'),
-    db      = path.resolve(__dirname, 'fixtures', 'registry.couch'),
-    log     = path.resolve(__dirname, 'fixtures', 'couch.log'),
-    repl    = path.resolve(__dirname, 'fixtures', '_replicator.couch')
-    ;
-
 describe('cleanup', function()
 {
     it('can kill the couch zombie', function(done)
     {
+        var pidfile = path.resolve(__dirname, 'couch-tmp', 'pid');
         var pid;
         try { pid = fs.readFileSync(pidfile); } catch (err) {}
 
@@ -31,16 +24,19 @@ describe('cleanup', function()
             try { process.kill(pid); } catch (err) { err.code.must.equal('ESRCH'); }
         }
 
-        try { fs.unlinkSync(pidfile) } catch (err) { err.code.must.equal('ENOENT'); }
-        try { fs.unlinkSync(repl) } catch (err) { err.code.must.equal('ENOENT'); }
-        try { fs.unlinkSync(log) } catch (err) { err.code.must.equal('ENOENT'); }
-        try { fs.unlinkSync(_users) } catch (err) { err.code.must.equal('ENOENT'); }
-        try { fs.unlinkSync(db) } catch (err) { err.code.must.equal('ENOENT'); }
-
         done();
     });
 
-    it('can gut the multifishes', { timeout: 10000 }, function(done)
+    it('can clean up the couch tmp dir', function(done)
+    {
+        rimraf(path.resolve(__dirname, 'couch-tmp'), function(err)
+        {
+            demand(err).be.falsy();
+            done();
+        });
+    });
+
+    it('can gut the multifishes', { timeout: 30000 }, function(done)
     {
         var manta = Manta(process.argv, process.env);
         manta.rmr('~~/stor/registry-testing/', function(err)

@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+
+var multifs = require('multi-fs');
+
 var createClient = require('manta-client');
 var manta = require('manta');
 var Skim = require('../');

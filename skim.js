@@ -46,12 +46,6 @@ function Skim(opts) {
   if (this.seqFile)
     this.seqFile = path.resolve(this.seqFile);
 
-  if (!opts.path || typeof opts.path !== 'string')
-    throw new TypeError('opts.path is required');
-  this.path = opts.path
-    .replace(/\/+$/, '')
-    .replace(/^~~/, '/' + this.client.user);
-
   if (!opts.db || !url.parse(opts.db).protocol)
     throw new TypeError('opts.db url is required');
   this.db = opts.db.replace(/\/+$/, '');
@@ -67,27 +61,23 @@ function Skim(opts) {
     throw new TypeError('opts.seq must be of type number');
   this.seq = opts.seq || 0;
 
-  if (opts.concurrency && typeof opts.concurrency !== 'number')
-    throw new TypeError('opts.concurrency must be of type number');
-  this.concurrency = opts.concurrency;
-
   this.delete = !!opts.delete;
 
   this.following = false;
   this.savingSeq = false;
 
-  this.skim = url.parse(opts.skim || opts.db).href
-  this.skim = this.skim.replace(/\/+$/, '')
-  this.db = url.parse(this.db).href.replace(/\/+$/, '')
-  this.fat = this.db
+  this.skim = url.parse(opts.skim || opts.db).href;
+  this.skim = this.skim.replace(/\/+$/, '');
+  this.db = url.parse(this.db).href.replace(/\/+$/, '');
+  this.fat = this.db;
 
-  this.registry = null
+  this.registry = null;
   if (opts.registry) {
-    this.registry = url.parse(opts.registry).href
-    this.registry = this.registry.replace(/\/+$/, '')
+    this.registry = url.parse(opts.registry).href;
+    this.registry = this.registry.replace(/\/+$/, '');
   }
 
-  this.on('put', this.onput)
+  this.on('put', this.onput);
 
   this.start();
 }
@@ -217,7 +207,7 @@ Skim.prototype._put = function(change) {
     fname = path.join(doc.name, fname);
     self.getFile(change, json, fname, function(err, data) {
 
-      var destFile = path.join(self.path, fname);
+      var destFile = path.join('.', fname);
       var destdir = path.dirname(destFile);
       self.client.mkdirp(destdir, function(err) {
 
@@ -256,7 +246,7 @@ Skim.prototype.rm = function(change) {
   if (this.delete) {
     this.emit('rm', change);
     this.pause();
-    this.client.rmr(this.path + '/' + change.id, this.onRm.bind(this, change));
+    this.client.rmr('./' + change.id, this.onRm.bind(this, change));
   }
 }
 
@@ -424,13 +414,6 @@ Skim.prototype.putBack = function(change, results) {
     else
       this.completeAndResume(change, results)
   }.bind(this))).end(body)
-}
-
-Skim.prototype.getMd5 = function(change, json, file, cb) {
-  var md5
-  if (file.match(/\/doc\.json$/))
-    md5 = crypto.createHash('md5').update(json).digest('base64');
-  cb(null, md5);
 }
 
 Skim.prototype.getFile = function(change, json, file, cb) {
