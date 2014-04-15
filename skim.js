@@ -201,6 +201,11 @@ Skim.prototype._put = function(change) {
 
   var self = this;
   var count = Object.keys(files).length;
+  if (count < 2) {
+    // we only have a doc.json
+    self.onPutFilesComplete(change);
+    return;
+  }
 
   Object.keys(files).forEach(function(fname) {
 

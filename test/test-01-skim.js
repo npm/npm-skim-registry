@@ -17,6 +17,7 @@ var
     ;
 
 var createTestClient = require('./client');
+var skimmer;
 
 describe('skimming', function()
 {
@@ -71,8 +72,6 @@ describe('skimming', function()
         shouldThrow.must.throw(/type number/);
         done();
     });
-
-    var skimmer;
 
     it('emits expected events on a first sync', { timeout: 20000 }, function(done)
     {
@@ -192,27 +191,21 @@ describe('skimming', function()
         .end(body);
     }
 
-    it('say hello to a second publish', { timeout: 20000 }, function(done)
+    it('a live publish is handled correctly', { timeout: 20000 }, function(done)
     {
         var client = createTestClient();
         var expected2 =
         {
-'put test-package' : 1,
-'attachment test-package/_attachments/test-package-0.0.0.tgz' : 1,
-'sent test-package/doc.json' : 1,
-'sent test-package/_attachments/test-package-0.0.0.tgz' : 1,
-'complete test-package': 1,
-            'put semver' : 3,
+            'put semver' : 1,
             'attachment semver/_attachments/semver-0.1.0.tgz' : 1,
-            'sent semver/doc.json' : 3,
+            'sent semver/doc.json' : 1,
             'sent semver/_attachments/semver-0.1.0.tgz' : 1,
-            'complete semver': 3
+            'complete semver': 1
         };
 
         function checkEvent()
         {
             var str = util.format.apply(util, arguments);
-            console.log(str);
             expected2.must.have.property(str);
 
             expected2[str]--;
@@ -221,9 +214,7 @@ describe('skimming', function()
 
             if (Object.keys(expected2).length === 0)
             {
-                console.log('we are done baby')
                 skimmer.removeAllListeners();
-                skimmer.destroy();
                 done();
             }
         }
@@ -247,12 +238,23 @@ describe('skimming', function()
 
         publishPackage(function()
         {
-            console.log('published semver');
+            // console.log('published a second package');
         });
     });
 
-    it('removes attachments on unpublish (if delete is set)', function(done)
+    it('leaves doc.json & attachments on document deletion (delete not set)', function(done)
     {
+
+
+
         done();
+    });
+
+    it('removes attachments on unpublish (if delete is set)');
+
+    after(function(done)
+    {
+        skimmer.destroy();
+        setTimeout(done, 1000);
     });
 });

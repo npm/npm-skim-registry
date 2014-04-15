@@ -36,6 +36,15 @@ describe('cleanup', function()
         });
     });
 
+    it('can cleanup the destination directories', function(done)
+    {
+        rimraf(path.join(__dirname, 'tmp'), function(err)
+        {
+            demand(err).be.falsy();
+            done();
+        });
+    });
+
     it('can gut the multifishes', { timeout: 30000 }, function(done)
     {
         var manta = Manta(process.argv, process.env);
@@ -48,14 +57,4 @@ describe('cleanup', function()
             done();
         });
     });
-
-    it('can cleanup the destination directories', function(done)
-    {
-        rimraf(path.join(__dirname, 'tmp'), function(err)
-        {
-            demand(err).be.falsy();
-            done();
-        });
-    });
-
 });
