@@ -71,14 +71,15 @@ describe('skimming', function()
         done();
     });
 
+    // TODO note duplication with the semver test
     it('emits expected events on a first sync', { timeout: 20000 }, function(done)
     {
         mclient = createTestClient();
         var expected =
         {
             'put test-package' : 1,
-            'attachment test-package/_attachments/test-package-0.0.0.tgz' : 1,
-            'sent test-package/doc.json' : 1,
+            'attachment test-package/_attachments/test-package-0.0.0.tgz' : 2,
+            'sent test-package/doc.json' : 2,
             'sent test-package/_attachments/test-package-0.0.0.tgz' : 1,
             'complete test-package': 1
         };
@@ -86,6 +87,7 @@ describe('skimming', function()
         function checkEvent()
         {
             var str = util.format.apply(util, arguments);
+            // console.log(str)
             expected.must.have.property(str);
 
             expected[str]--;
@@ -94,7 +96,13 @@ describe('skimming', function()
 
             if (Object.keys(expected).length === 0)
             {
-                skimmer.removeAllListeners();
+                skimmer.removeListener('put', checkPut);
+                skimmer.removeAllListeners('rm');
+                skimmer.removeAllListeners('send');
+                skimmer.removeAllListeners('delete');
+                skimmer.removeAllListeners('attachment');
+                skimmer.removeAllListeners('complete');
+                skimmer.removeAllListeners('error');
                 done();
             }
         }
@@ -104,14 +112,16 @@ describe('skimming', function()
             debug         : true,
             client        : mclient,
             db            : 'http://localhost:15984/registry',
-            path          : '.',
+            registry      : 'http://registry.example.com/',
             seq           : 0,
             seqFile       : './test/couch-tmp/sequence',
-            inactivity_ms : 10000
+            inactivity_ms : 20000
         };
 
+        function checkPut(change) { checkEvent('put %s', change.id); }
+
         skimmer = skim(opts)
-        .once('put', function(change) { checkEvent('put %s', change.id); })
+        .once('put', checkPut)
         .on('rm', function(change) { checkEvent('rm %s', change.id); })
         .on('send', function(change, file) { checkEvent('sent %s', file); })
         .on('delete', function(change, file) { checkEvent('delete %s', file); })
@@ -181,16 +191,17 @@ describe('skimming', function()
         var client = createTestClient();
         var expected2 =
         {
-            'put semver' : 1,
-            'attachment semver/_attachments/semver-0.1.0.tgz' : 1,
-            'sent semver/doc.json' : 1,
-            'sent semver/_attachments/semver-0.1.0.tgz' : 1,
-            'complete semver': 1
+            'put semver' : 2,
+            'attachment semver/_attachments/semver-0.1.0.tgz' : 2,
+            'sent semver/doc.json' : 2,
+            'sent semver/_attachments/semver-0.1.0.tgz' : 2,
+            'complete semver': 2,
         };
 
         function checkEvent()
         {
             var str = util.format.apply(util, arguments);
+            // console.log(str);
             expected2.must.have.property(str);
 
             expected2[str]--;
@@ -199,13 +210,21 @@ describe('skimming', function()
 
             if (Object.keys(expected2).length === 0)
             {
-                skimmer.removeAllListeners();
+                skimmer.removeListener('put', checkPut);
+                skimmer.removeAllListeners('rm');
+                skimmer.removeAllListeners('send');
+                skimmer.removeAllListeners('delete');
+                skimmer.removeAllListeners('attachment');
+                skimmer.removeAllListeners('complete');
+                skimmer.removeAllListeners('error');
                 done();
             }
         }
 
+        function checkPut(change) { checkEvent('put %s', change.id); }
+
         skimmer
-        .on('put', function(change) { checkEvent('put %s', change.id); })
+        .on('put', checkPut)
         .on('rm', function(change) { checkEvent('rm %s', change.id); })
         .on('send', function(change, file) { checkEvent('sent %s', file); })
         .on('delete', function(change, file) { checkEvent('delete %s', file); })
@@ -224,6 +243,48 @@ describe('skimming', function()
         publishPackage(function()
         {
             // console.log('published a second package');
+        });
+    });
+
+    it('updated the registry url properly', function(done)
+    {
+        Request.get('http://admin:admin@localhost:15984/registry/semver', {json: true}, function(err, res, body)
+        {
+            var tarball = body.versions['0.1.0'].dist.tarball;
+            tarball.must.be.a.string();
+            tarball.must.match(/registry.example.com/);
+            done();
+        });
+    });
+
+    // TODO is this test a valid exercise of the delete flag feature? What does the feature even mean?
+    it('leaves files in place on a registry doc delete (if delete is not set)', function(done)
+    {
+        Request.get('http://admin:admin@localhost:15984/registry/semver', {json: true}, function(err, res, body)
+        {
+            var opts =
+            {
+                uri: 'http://admin:admin@localhost:15984/registry/semver',
+                method: 'DELETE',
+                json: true,
+                qs: { rev: body._rev}
+            };
+            Request(opts, function(err, res, body)
+            {
+                demand(err).not.exist();
+                res.statusCode.must.equal(200);
+                body.must.be.an.object();
+                body.must.have.property('ok');
+                body.ok.must.be.true();
+
+                mclient.stat('semver/_attachments/semver-0.1.0.tgz', function(err, response)
+                {
+                    demand(err).not.exist();
+                    response.must.be.an.object();
+                    response.isFile.must.be.true();
+                    done();
+                });
+            });
         });
     });
 
