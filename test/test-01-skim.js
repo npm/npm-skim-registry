@@ -134,7 +134,7 @@ describe('skimming', function()
                 console.error(err.stackTrace());
             else
                 console.error(err);
-            demand(err).be.falsy();
+            demand(err).not.exist();
         });
     });
 
@@ -144,7 +144,7 @@ describe('skimming', function()
         var target = 'test-package/_attachments/test-package-0.0.0.tgz';
         client.md5(target, function(err, res, data)
         {
-            demand(err).be.falsy();
+            demand(err).not.exist();
             res.must.be.a.string();
             res.must.equal('d952d40c43c1f88387999986572ea0e1');
             client.close();
@@ -156,7 +156,7 @@ describe('skimming', function()
     {
         Request.get('http://localhost:15984/registry/test-package', {json: true}, function(err, response, body)
         {
-            demand(err).be.falsy();
+            demand(err).not.exist();
             body.must.be.an.object();
             body.must.not.have.property('_attachments');
             done();
@@ -180,7 +180,7 @@ describe('skimming', function()
 
         Request(opts, function(err, response, body)
         {
-            demand(err).be.falsy();
+            demand(err).not.exist();
             response.statusCode.must.equal(201);
             callback();
         });
@@ -237,7 +237,7 @@ describe('skimming', function()
                 console.error(err.stackTrace());
             else
                 console.error(err);
-            demand(err).be.falsy();
+            demand(err).not.exist();
         });
 
         publishPackage(function()

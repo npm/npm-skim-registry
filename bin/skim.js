@@ -1,13 +1,16 @@
 #!/usr/bin/env node
 
-var multifs = require('multi-fs');
+// TODO finish revising this for multi-fs
 
-var createClient = require('manta-client');
-var manta = require('manta');
+var MultiFS = require('multi-fs');
 var Skim = require('../');
 var dashdash = require('dashdash');
 var parser = dashdash.createParser({
   options: [
+    { names: [ 'config', 'f' ],
+      type: 'string',
+      help: 'config file for multifs targets',
+      helpArg: 'FILE' },
     { names: [ 'seq-file', 'Q' ],
       type: 'string',
       help: 'File to store the sequence in',
@@ -26,14 +29,17 @@ var parser = dashdash.createParser({
       helpArg: 'MS' },
     { names: [ 'delete', 'd' ],
       type: 'bool',
-      help: 'Delete removed attachments and docs from manta' },
+      help: 'Delete removed attachments and docs from targets' },
     { names: [ 'skim', 's'] ,
       type: 'string',
       helpArg: 'URL',
       help: 'Target to write attachment free docs. ' +
-            'Defaults to put back into COUCHDB arg.' }
+            'Defaults to put back into COUCHDB arg.' },
+    { names: ['help', 'h'],
+      type: 'bool',
+      help: 'Print this help and exit' },
 
-  ].concat(manta.DEFAULT_CLI_OPTIONS)
+  ]
 });
 
 var opts = parser.parse(process.argv, process.env);
@@ -42,7 +48,9 @@ var args = opts._args;
 if (opts.help || args.length !== 4)
   return usage();
 
-var client = createClient(process.argv, process.env);
+var targets = require(opts.config);
+var client = new MultiFS(targets);
+
 var db = args[2];
 var path = args[3];
 var seqFile = opts.seq_file;
@@ -71,6 +79,8 @@ Usage: npm-skim-registry [args] COUCHDB MANTAPATH
                                         ~~/stor/database
 */
 }
+
+
 
 Skim({
   client: client,
