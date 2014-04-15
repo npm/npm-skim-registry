@@ -8,16 +8,14 @@ var
     after    = lab.after,
     demand   = require('must'),
     fs       = require('fs'),
-    http     = require('http'),
-    parse    = require('parse-json-response'),
     path     = require('path'),
+    Request  = require('request'),
     skim     = require('../skim.js'),
-    url      = require('url'),
     util     = require('util')
     ;
 
 var createTestClient = require('./client');
-var skimmer;
+var skimmer, mclient;
 
 describe('skimming', function()
 {
@@ -75,7 +73,7 @@ describe('skimming', function()
 
     it('emits expected events on a first sync', { timeout: 20000 }, function(done)
     {
-        var client = createTestClient();
+        mclient = createTestClient();
         var expected =
         {
             'put test-package' : 1,
@@ -104,7 +102,7 @@ describe('skimming', function()
         var opts =
         {
             debug         : true,
-            client        : client,
+            client        : mclient,
             db            : 'http://localhost:15984/registry',
             path          : '.',
             seq           : 0,
@@ -146,17 +144,14 @@ describe('skimming', function()
 
     it('removes the attachment from couch', { timeout: 10000 }, function(done)
     {
-        var opts = url.parse('http://localhost:15984/registry/test-package');
-        opts.headers = { 'connection': 'close' };
-        http.get(opts, parse(function(err, data, response)
+        Request.get('http://localhost:15984/registry/test-package', {json: true}, function(err, response, body)
         {
             demand(err).be.falsy();
-            data.must.be.an.object();
-            data.must.not.have.property('_attachments');
+            body.must.be.an.object();
+            body.must.not.have.property('_attachments');
             done();
-        }));
+        });
     });
-
 
     function publishPackage(callback)
     {
@@ -166,29 +161,19 @@ describe('skimming', function()
         testPkg._attachments['semver-0.1.0.tgz'].data = tgzData;
         testPkg._attachments['semver-0.1.0.tgz'].stub = false;
 
-        var body = new Buffer(JSON.stringify(testPkg));
-
-        var u = url.parse('http://admin:admin@localhost:15984/registry/semver');
-        u.method = 'PUT';
-        u.headers =
+        var opts =
         {
-            'content-type': 'application/json',
-            'content-length': body.length,
-            connection: 'close'
+            uri:    'http://admin:admin@localhost:15984/registry/semver',
+            method: 'PUT',
+            json:   testPkg,
         };
 
-        http.request(u, function(response)
-        {
-            response.statusCode.must.equal(201);
-            if (response.statusCode !== 201)
-                response.pipe(process.stderr)
-            callback();
-        })
-        .on('error', function(err)
+        Request(opts, function(err, response, body)
         {
             demand(err).be.falsy();
-        })
-        .end(body);
+            response.statusCode.must.equal(201);
+            callback();
+        });
     }
 
     it('a live publish is handled correctly', { timeout: 20000 }, function(done)
@@ -241,16 +226,6 @@ describe('skimming', function()
             // console.log('published a second package');
         });
     });
-
-    it('leaves doc.json & attachments on document deletion (delete not set)', function(done)
-    {
-
-
-
-        done();
-    });
-
-    it('removes attachments on unpublish (if delete is set)');
 
     after(function(done)
     {

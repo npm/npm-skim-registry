@@ -7,13 +7,10 @@ var
     before   = lab.before,
     demand   = require('must'),
     fs       = require('fs'),
-    http     = require('http'),
     Manta    = require('manta-client'),
     mkdirp   = require('mkdirp'),
-    parse    = require('parse-json-response'),
     path     = require('path'),
-    spawn    = require('child_process').spawn,
-    url      = require('url')
+    spawn    = require('child_process').spawn
     ;
 
 describe('setup', function()

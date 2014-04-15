@@ -20,6 +20,7 @@
     "lab": "^3.0.1",
     "mkdirp": "^0.3.5",
     "must": "^0.11.0",
+    "request": "^2.34.0",
     "rimraf": "^2.2.6"
   },
   "homepage": "https://github.com/npm/npm-skim-registry",
