@@ -10,7 +10,7 @@ var
     fs       = require('fs'),
     path     = require('path'),
     Request  = require('request'),
-    skim     = require('../skim.js'),
+    Skimmer  = require('../multiskimmer.js'),
     util     = require('util')
     ;
 
@@ -19,71 +19,23 @@ var skimmer, mclient;
 
 describe('skimming', function()
 {
-    it('requires an options object', function(done)
+    function createSkimmer(seq)
     {
-        function shouldThrow() { return skim(); }
-        shouldThrow.must.throw(TypeError);
-        done();
-    });
-
-    it('requires a MultiFS client option', function(done)
-    {
-        function shouldThrow() { return skim({}); }
-        shouldThrow.must.throw(/MultiFS/);
-        done();
-    });
-
-    it('requires that a `seqFile` option be a string', function(done)
-    {
-        function shouldThrow() { return skim({ client: createTestClient(), seqFile: 20 }); }
-        shouldThrow.must.throw(/seqFile/);
-        done();
-    });
-
-    it('requires a url in opts.db', function(done)
-    {
-        function shouldThrow() { return skim({ client: createTestClient(), db: 'I am not a url' }); }
-        shouldThrow.must.throw(/is required/);
-        done();
-    });
-
-    it('requires a number if opts.inactivity_ms is provided', function(done)
-    {
-        function shouldThrow() { return skim(
+        var opts =
         {
-            client: createTestClient(),
-            db: 'http://localhost:15984/registry',
-            inactivity_ms: 'foo'
-        }); }
-        shouldThrow.must.throw(/type number/);
-        done();
-    });
-
-    it('requires a number if opts.seq is provided', function(done)
-    {
-        function shouldThrow() { return skim(
-        {
-            client: createTestClient(),
-            db: 'http://localhost:15984/registry',
-            seq: 'foo'
-        }); }
-        shouldThrow.must.throw(/type number/);
-        done();
-    });
-
-    // TODO note duplication with the semver test
-    it('emits expected events on a first sync', { timeout: 20000 }, function(done)
-    {
-        mclient = createTestClient();
-        var expected =
-        {
-            'put test-package' : 1,
-            'attachment test-package/_attachments/test-package-0.0.0.tgz' : 2,
-            'sent test-package/doc.json' : 2,
-            'sent test-package/_attachments/test-package-0.0.0.tgz' : 1,
-            'complete test-package': 1
+            client:        createTestClient(),
+            source:        'http://localhost:15984/registry',
+            registry:      'http://registry.example.com/',
+            sequenceFile:  './test/couch-tmp/sequence',
+            inactivity_ms: 20000
         };
+        var skimmer = new Skimmer(opts);
+        skimmer.on('log', function(msg) { console.log('LOG: ' + msg); });
+        return skimmer;
+    }
 
+    function verifyExpectedEvents(expected, callback)
+    {
         function checkEvent()
         {
             var str = util.format.apply(util, arguments);
@@ -96,32 +48,17 @@ describe('skimming', function()
 
             if (Object.keys(expected).length === 0)
             {
-                skimmer.removeListener('put', checkPut);
-                skimmer.removeAllListeners('rm');
-                skimmer.removeAllListeners('send');
-                skimmer.removeAllListeners('delete');
-                skimmer.removeAllListeners('attachment');
-                skimmer.removeAllListeners('complete');
-                skimmer.removeAllListeners('error');
-                done();
+                skimmer.destroy();
+                callback();
             }
         }
 
-        var opts =
-        {
-            debug         : true,
-            client        : mclient,
-            db            : 'http://localhost:15984/registry',
-            registry      : 'http://registry.example.com/',
-            seq           : 0,
-            seqFile       : './test/couch-tmp/sequence',
-            inactivity_ms : 20000
-        };
-
         function checkPut(change) { checkEvent('put %s', change.id); }
 
-        skimmer = skim(opts)
-        .once('put', checkPut)
+        skimmer = createSkimmer();
+
+        skimmer
+        .on('put', checkPut)
         .on('rm', function(change) { checkEvent('rm %s', change.id); })
         .on('send', function(change, file) { checkEvent('sent %s', file); })
         .on('delete', function(change, file) { checkEvent('delete %s', file); })
@@ -136,6 +73,21 @@ describe('skimming', function()
                 console.error(err);
             demand(err).not.exist();
         });
+    }
+
+    it('emits expected events on a first sync', { timeout: 20000 }, function(done)
+    {
+        var expected =
+        {
+            'put test-package' : 2,
+            'attachment test-package/_attachments/test-package-0.0.0.tgz' : 2,
+            'sent test-package/doc.json' : 2,
+            'sent test-package/_attachments/test-package-0.0.0.tgz' : 1,
+            'complete test-package': 2
+        };
+
+        verifyExpectedEvents(expected, done);
+        skimmer.start();
     });
 
     it('writes files with correct md5 sums', { timeout: 20000 }, function(done)
@@ -161,6 +113,15 @@ describe('skimming', function()
             body.must.not.have.property('_attachments');
             done();
         });
+    });
+
+    it('it does not recopy attachments it already has', function(done)
+    {
+        // TODO
+        // make a second skimmer
+        // verify that it only gets 'put test-package' && 'complete test-package' events
+
+        done();
     });
 
     function publishPackage(callback)
@@ -197,49 +158,7 @@ describe('skimming', function()
             'sent semver/_attachments/semver-0.1.0.tgz' : 2,
             'complete semver': 2,
         };
-
-        function checkEvent()
-        {
-            var str = util.format.apply(util, arguments);
-            // console.log(str);
-            expected2.must.have.property(str);
-
-            expected2[str]--;
-            if (expected2[str] === 0)
-                delete expected2[str];
-
-            if (Object.keys(expected2).length === 0)
-            {
-                skimmer.removeListener('put', checkPut);
-                skimmer.removeAllListeners('rm');
-                skimmer.removeAllListeners('send');
-                skimmer.removeAllListeners('delete');
-                skimmer.removeAllListeners('attachment');
-                skimmer.removeAllListeners('complete');
-                skimmer.removeAllListeners('error');
-                done();
-            }
-        }
-
-        function checkPut(change) { checkEvent('put %s', change.id); }
-
-        skimmer
-        .on('put', checkPut)
-        .on('rm', function(change) { checkEvent('rm %s', change.id); })
-        .on('send', function(change, file) { checkEvent('sent %s', file); })
-        .on('delete', function(change, file) { checkEvent('delete %s', file); })
-        .on('attachment', function(change, file) { checkEvent('attachment %s', file); })
-        .on('complete', function(change, results) { checkEvent('complete %s', change.id); })
-        .on('error', function(err)
-        {
-            console.log('woah skimmer threw an error!');
-            if (err.stackTrace)
-                console.error(err.stackTrace());
-            else
-                console.error(err);
-            demand(err).not.exist();
-        });
-
+        verifyExpectedEvents(expected2, done);
         publishPackage(function()
         {
             // console.log('published a second package');
@@ -277,7 +196,8 @@ describe('skimming', function()
                 body.must.have.property('ok');
                 body.ok.must.be.true();
 
-                mclient.stat('semver/_attachments/semver-0.1.0.tgz', function(err, response)
+                var client = createTestClient();
+                client.stat('semver/_attachments/semver-0.1.0.tgz', function(err, response)
                 {
                     demand(err).not.exist();
                     response.must.be.an.object();
