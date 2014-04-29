@@ -34,6 +34,7 @@ var MultiSkimmer = module.exports = function MultiSkimmer(opts)
 	events.EventEmitter.call(this);
 
     this.opts          = opts;
+    this.client        = opts.client;
     this.sequenceFile  = path.resolve(opts.sequenceFile);
     this.inactivity_ms = opts.inactivity_ms;
     this.delete        = !!opts.delete;
@@ -50,6 +51,8 @@ var MultiSkimmer = module.exports = function MultiSkimmer(opts)
 
 	if (opts.registry)
 		this.registry  = url.parse(opts.registry).href.replace(/\/+$/, '');
+
+    this.on('put', this.cleanupDoc.bind(this));
 };
 util.inherits(MultiSkimmer, events.EventEmitter);
 
@@ -222,7 +225,7 @@ MultiSkimmer.prototype.handlePut = function handlePut(change)
 
 	this.emit('log', 'handling put: ' + change.id);
 	this.pause();
-	var url = this.source + '/' + this.changeid + '?att_encoding_info=true&revs=true';
+	var url = this.source + '/' + change.id + '?att_encoding_info=true&revs=true';
 	Request.get(url, { json: true }, function(err, res, body)
 	{
 		if (err) return this.emit('error', err);
@@ -245,8 +248,6 @@ MultiSkimmer.prototype.multiball = function MULTIBALL(change)
 	// multi-fs client, but ONLY if they don't already exist.
 	this.emit('log', 'MULTIBALL! ' + change.id);
 	this.emit('put', change);
-
-    this.cleanupDoc(change);
 
 	var doc = change.doc;
 	var files = Object.keys(doc._attachments || {})
@@ -276,20 +277,15 @@ MultiSkimmer.prototype.multiball = function MULTIBALL(change)
         digest: md5sum(json),
 	};
 
-	var count = Object.keys(files).length;
-	if (count === 1 && files['doc.json'])
-	{
-		this.multiballComplete(change);
-		return;
-	}
-
     var changeInfo = { doc: doc, json: json, change: change };
 
-	var iterator = function(fname, cb) { this.checkFileAndCopy(changeInfo, fname, files[fname], cb); }.bind(this);
-	async.each(files, iterator, function(err, results)
-	{
-		this.multiballComplete(change);
-	}.bind(this));
+	var iterator = function(fname, cb)
+    {
+        this.checkFileAndCopy(changeInfo, fname, files[fname], cb);
+    }.bind(this);
+
+    var completed = function(err) { this.multiballComplete(change); }.bind(this);
+	async.each(Object.keys(files), iterator, completed);
 };
 
 function md5sum(str)
@@ -299,38 +295,31 @@ function md5sum(str)
 
 MultiSkimmer.prototype.checkFileAndCopy = function checkFileAndCopy(changeInfo, filename, metadata, callback)
 {
+    var self = this;
 	this.emit('log', 'skimming ' + filename + ' from ' + changeInfo.doc.name);
+    if (filename === 'doc.json')
+        return this.copyJSON(changeInfo, filename, metadata, callback);
 
 	var fpath = path.join(changeInfo.doc.name, filename);
-	this.client.stat(fpath, function(err, type, stat)
+    this.emit('log', 'statting ' + fpath);
+	self.client.stat(fpath, function(err, type, stat)
 	{
 		// ENOENT means we don't have a file there! push it up
         if (err && err.code === 'ENOENT')
-            return this.copyFile(changeInfo, filename, callback);
-        if (err) return callback(err);
-
-        this.client.md5(fpath, function(err, md5)
-        {
-            if (err) return callback(err);
-            if (md5 === metadata.digest)
-                return callback();
-
-            this.copyFile(changeInfo, filename, callback);
-
-        }.bind(this));
-	}.bind(this));
+            return self.copyFile(changeInfo, filename, metadata, callback);
+        callback(err);
+	});
 };
 
-MultiSkimmer.prototype.copyFile = function copyFile(changeInfo, filename, callback)
+MultiSkimmer.prototype.copyFile = function copyFile(changeInfo, filename, metadata, callback)
 {
-    this.emit('log', 'copyFile()' + filename);
+    var destfile = path.join('.', changeInfo.change.id, filename);
+    var destdir = path.dirname(destfile);
+    this.emit('log', 'exploding file ' + destfile);
 
-    this.fetchAttachment(changeInfo.change, changeInfo.json, filename, function(err, data)
+    this.fetchAttachment(changeInfo.change, filename, function(err, data)
     {
         if (err) return callback(err);
-
-        var destfile = path.join('.', filename);
-        var destdir = path.dirname(destfile);
 
         this.client.mkdirp(destdir, function(err)
         {
@@ -338,7 +327,7 @@ MultiSkimmer.prototype.copyFile = function copyFile(changeInfo, filename, callba
             this.client.writeFile(destfile, data, function(err)
             {
                 if (err) return callback(err);
-                this.emit('send', changeInfo.change, filename);
+                this.emit('send', changeInfo.change, destfile);
                 callback();
 
             }.bind(this));
@@ -346,32 +335,54 @@ MultiSkimmer.prototype.copyFile = function copyFile(changeInfo, filename, callba
     }.bind(this));
 };
 
-MultiSkimmer.prototype.fetchAttachment = function fetchAttachment(change, json, file, callback)
+MultiSkimmer.prototype.copyJSON = function copyJSON(changeInfo, filename, metadata, callback)
 {
-	if (file.match(/\/doc\.json$/))
+    var passthru = new stream.PassThrough();
+    passthru.end(changeInfo.json);
+
+    var destfile = path.join('.', changeInfo.change.id, filename);
+    var destdir = path.dirname(destfile);
+    this.emit('log', 'exploding docfile for ' + changeInfo.change.id);
+
+    this.client.mkdirp(destdir, function(err)
+    {
+        if (err) return callback(err);
+        this.client.md5(destfile, function(err, res, response)
+        {
+            if (err && err.code !== 'ENOENT') return callback(err);
+            if (!err)
+            {
+                var md5 = response.results[0];
+                if (md5 === metadata.digest)
+                    return callback();
+            }
+
+            this.client.writeFile(destfile, passthru, function(err)
+            {
+                if (err) return callback(err);
+                this.emit('send', changeInfo.change, destfile);
+                callback();
+            }.bind(this));
+        }.bind(this));
+    }.bind(this));
+};
+
+MultiSkimmer.prototype.fetchAttachment = function fetchAttachment(change, file, callback)
+{
+	var passthru = new stream.PassThrough();
+	this.emit('attachment', change, path.join(change.id, file));
+	var opts =
 	{
-		var stream = new stream.PassThrough();
-		stream.end(json);
-		callback(null, stream);
-	}
-	else
-	{
-		this.emit('attachment', change, file);
-		var opts =
-		{
-			uri: this.source +
-				'/' +
-				path.dirname(file.name).replace(/^_attachments/, change.id) +
-				'/' +
-				encodeURIComponent(path.basename(file)),
-			method: 'GET',
-			json: true
-		};
-		Request(opts, function(err, res, body)
-		{
-			callback(err, body);
-		});
-	}
+		uri: this.source +
+			'/' +
+			path.dirname(file.name).replace(/^_attachments/, change.id) +
+			'/' +
+			encodeURIComponent(path.basename(file)),
+		method: 'GET',
+		json: true
+	};
+    Request(opts).pipe(passthru);
+	callback(null, passthru);
 };
 
 
@@ -446,6 +457,7 @@ MultiSkimmer.prototype.cleanupDoc = function onPut(change)
 
 MultiSkimmer.prototype.multiballComplete = function multiballComplete(change, results)
 {
+    this.emit('log', 'multiball ended ' + change.id);
     var doc = change.doc;
     var attachments = doc._attachments || {};
 
