@@ -15,7 +15,6 @@ var
     ;
 
 var createTestClient = require('./client');
-var skimmer, mclient;
 
 describe('skimming', function()
 {
@@ -55,7 +54,7 @@ describe('skimming', function()
 
         function checkPut(change) { checkEvent('put %s', change.id); }
 
-        skimmer = createSkimmer();
+        var skimmer = createSkimmer();
 
         skimmer
         .on('put', checkPut)
@@ -73,6 +72,8 @@ describe('skimming', function()
                 console.error(err);
             demand(err).not.exist();
         });
+
+        return skimmer;
     }
 
     it('emits expected events on a first sync', { timeout: 20000 }, function(done)
@@ -86,7 +87,8 @@ describe('skimming', function()
             'complete test-package': 2
         };
 
-        verifyExpectedEvents(expected, done);
+        function cleanup() { skimmer.destroy(); setTimeout(done, 1000); }
+        var skimmer = verifyExpectedEvents(expected, cleanup);
         skimmer.start();
     });
 
@@ -115,7 +117,6 @@ describe('skimming', function()
         });
     });
 
-/*
     it('it does not recopy attachments it already has', function(done)
     {
         // TODO
@@ -154,15 +155,19 @@ describe('skimming', function()
         var expected2 =
         {
             'put semver' : 2,
-            'attachment semver/_attachments/semver-0.1.0.tgz' : 2,
+            'attachment semver/_attachments/semver-0.1.0.tgz' : 1,
             'sent semver/doc.json' : 2,
-            'sent semver/_attachments/semver-0.1.0.tgz' : 2,
+            'sent semver/_attachments/semver-0.1.0.tgz' : 1,
             'complete semver': 2,
         };
-        verifyExpectedEvents(expected2, done);
+
+        function cleanup() { skimmer.destroy(); setTimeout(done, 1000); }
+
+        var skimmer = verifyExpectedEvents(expected2, cleanup);
+        skimmer.start();
         publishPackage(function()
         {
-            // console.log('published a second package');
+            console.log('published a second package');
         });
     });
 
@@ -207,11 +212,5 @@ describe('skimming', function()
                 });
             });
         });
-    });
-*/
-    after(function(done)
-    {
-        skimmer.destroy();
-        setTimeout(done, 1000);
     });
 });
