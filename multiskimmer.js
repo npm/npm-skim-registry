@@ -1,6 +1,7 @@
 var
     assert     = require('assert'),
     async      = require('async'),
+    crypto     = require('crypto'),
     events     = require('events'),
     follow     = require('follow'),
     fs         = require('fs'),
@@ -49,8 +50,6 @@ var MultiSkimmer = module.exports = function MultiSkimmer(opts)
 
 	if (opts.registry)
 		this.registry  = url.parse(opts.registry).href.replace(/\/+$/, '');
-
-	this.on('put', this.onPut.bind(this));
 };
 util.inherits(MultiSkimmer, events.EventEmitter);
 
@@ -153,7 +152,6 @@ MultiSkimmer.prototype.onChange = function onChange(err, change)
 		this.handlePut(change);
 };
 
-
 // ----- deletion
 
 MultiSkimmer.prototype.handleDeletion = function handleDeletion(change)
@@ -248,6 +246,8 @@ MultiSkimmer.prototype.multiball = function MULTIBALL(change)
 	this.emit('log', 'MULTIBALL! ' + change.id);
 	this.emit('put', change);
 
+    this.cleanupDoc(change);
+
 	var doc = change.doc;
 	var files = Object.keys(doc._attachments || {})
 	.reduce(function(s, k)
@@ -259,7 +259,11 @@ MultiSkimmer.prototype.multiball = function MULTIBALL(change)
 			delete attach.digest;
 			delete attach.length;
 		}
-		s['_attachments/' + k] = doc._attachments[k];
+
+        if (attach.digest)
+            attach.digest = attach.digest.replace(/^md5\-/, '');
+
+		s['_attachments/' + k] = attach;
 		return s;
 	}, {});
 
@@ -269,6 +273,7 @@ MultiSkimmer.prototype.multiball = function MULTIBALL(change)
         type:   'application/json',
         name:   'doc.json',
         length: json.length,
+        digest: md5sum(json),
 	};
 
 	var count = Object.keys(files).length;
@@ -278,35 +283,68 @@ MultiSkimmer.prototype.multiball = function MULTIBALL(change)
 		return;
 	}
 
-	var iterator = function(fname, cb) { this.skimFile(doc, fname, cb); }.bind(this);
+    var changeInfo = { doc: doc, json: json, change: change };
+
+	var iterator = function(fname, cb) { this.checkFileAndCopy(changeInfo, fname, files[fname], cb); }.bind(this);
 	async.each(files, iterator, function(err, results)
 	{
 		this.multiballComplete(change);
 	}.bind(this));
 };
 
-
-MultiSkimmer.prototype.skimFile = function skimFile(doc, filename, callback)
+function md5sum(str)
 {
-	this.emit('log', 'skimming ' + filename + ' from ' + doc.name);
-	// TODO
-	// - check to see if it exists in dest; if so, check md5
-	// - if not present, copy
-	// - emit 'send' for each one sent
+    return crypto.createHash('md5').update(str).digest('hex');
+}
 
-	var fpath = path.join(doc.name, filename);
+MultiSkimmer.prototype.checkFileAndCopy = function checkFileAndCopy(changeInfo, filename, metadata, callback)
+{
+	this.emit('log', 'skimming ' + filename + ' from ' + changeInfo.doc.name);
+
+	var fpath = path.join(changeInfo.doc.name, filename);
 	this.client.stat(fpath, function(err, type, stat)
 	{
 		// ENOENT means we don't have a file there! push it up
-		//
+        if (err && err.code === 'ENOENT')
+            return this.copyFile(changeInfo, filename, callback);
+        if (err) return callback(err);
 
+        this.client.md5(fpath, function(err, md5)
+        {
+            if (err) return callback(err);
+            if (md5 === metadata.digest)
+                return callback();
+
+            this.copyFile(changeInfo, filename, callback);
+
+        }.bind(this));
 	}.bind(this));
-
-
-
-	throw new Error('skimFile() unimplemented');
 };
 
+MultiSkimmer.prototype.copyFile = function copyFile(changeInfo, filename, callback)
+{
+    this.emit('log', 'copyFile()' + filename);
+
+    this.fetchAttachment(changeInfo.change, changeInfo.json, filename, function(err, data)
+    {
+        if (err) return callback(err);
+
+        var destfile = path.join('.', filename);
+        var destdir = path.dirname(destfile);
+
+        this.client.mkdirp(destdir, function(err)
+        {
+            if (err) return callback(err);
+            this.client.writeFile(destfile, data, function(err)
+            {
+                if (err) return callback(err);
+                this.emit('send', changeInfo.change, filename);
+                callback();
+
+            }.bind(this));
+        }.bind(this));
+    }.bind(this));
+};
 
 MultiSkimmer.prototype.fetchAttachment = function fetchAttachment(change, json, file, callback)
 {
@@ -353,21 +391,84 @@ MultiSkimmer.prototype.putDesign = function putDesign(change)
 	}.bind(this));
 };
 
-MultiSkimmer.prototype.onPut = function onPut(change)
+MultiSkimmer.prototype.cleanupDoc = function onPut(change)
 {
-	this.emit('log', 'entering onPut');
+	this.emit('log', 'entering cleanupDoc');
 
-	// this function seems to clean up the change document and then do nothing with the result.
-	// ???????
+    var doc = change.doc
+    // remove any attachments that don't belong, and
+    // put any previously-vacuumed tgz's with a {skip:true}
+    var attachments = doc._attachments || {};
+    var versions = Object.keys(doc.versions || {});
 
-	// TODO
-	throw new Error('onPut() unimplemented');
+    // Mark for keeping any that are the tarball for a version.
+    var keep = versions.reduce(function(set, v)
+    {
+        var p = url.parse(doc.versions[v].dist.tarball).pathname;
+        var f = path.basename(p);
+        set[f] = true;
+        return set;
+    }, {});
+
+    // Delete any attachments that are not keepers.
+    Object.keys(attachments).forEach(function(f)
+    {
+        if (!keep[f]) delete attachments[f];
+    });
+
+    // Don't delete any keepers that were already put into manta
+    Object.keys(keep).forEach(function(f)
+    {
+        if (!attachments[f])
+            attachments[f] = { skip: true }
+    });
+
+    doc._attachments = attachments;
+
+    // If we have a registry config, make sure that all dist.tarball
+    // urls are pointing at the registry url, and not some weird place.
+    if (this.registry)
+    {
+        versions.forEach(function(v)
+        {
+            var version = doc.versions[v];
+            var r = url.parse(version.dist.tarball);
+            var p = '/' + doc.name + '/-/' + path.basename(r.pathname);
+            r = url.parse(this.registry + p);
+            version.dist.tarball = r.href
+        }, this);
+    }
+
+    // Also, remove per-version readmes, and just have a single max-2mb
+    // readme at the top-level.
+    readmeTrim(doc);
 };
 
-MultiSkimmer.prototype.multiballComplete = function multiballComplete(change)
+MultiSkimmer.prototype.multiballComplete = function multiballComplete(change, results)
 {
-	// TODO
-	throw new Error('multiballComplete() unimplemented');
+    var doc = change.doc;
+    var attachments = doc._attachments || {};
+
+    var relevant = Object.keys(attachments).filter(function(a)
+    {
+        // Don't do putbacks for {skip:true} attachments.
+        return !attachments[a].skip;
+    });
+
+    var extraReadmes = Object.keys(doc.versions ||{}).filter(function(v)
+    {
+        return doc.versions[v].readme;
+    });
+
+    if (!relevant.length && !extraReadmes.length && (this.source === this.skimdb))
+    {
+        // We have nothing to skim off.
+        return this.completeAndResume(change, results);
+    }
+
+    // It's easier if we always have an _attachments, even if empty
+    doc._attachments = {};
+    this.putBack(change, results);
 };
 
 MultiSkimmer.prototype.putBack = function(change, results)
