@@ -3,6 +3,8 @@
 [Mcouch](http://npm.im/mcouch) for npm registries.  The opposite of
 [npm-fullfat-registry](http://npm.im/npm-fullfat-registry).
 
+[![wercker status](https://app.wercker.com/status/185fe5071b01008479f47c654f86cdbc/m/ "wercker status")](https://app.wercker.com/project/bykey/185fe5071b01008479f47c654f86cdbc)
+
 This moves attachments to the target in manta, but then *also* deletes
 them out of the couchdb.  It avoids then deleting them out of manta,
 by specifying a `{skip: true}` value for each tarball associated with
