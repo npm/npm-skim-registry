@@ -5,6 +5,7 @@ var
      bunyan   = require('bunyan'),
      dashdash = require('dashdash'),
      MultiFS  = require('multi-fs'),
+     path     = require('path'),
      util     = require('util')
      ;
 
@@ -47,10 +48,13 @@ var parser = dashdash.createParser({
 var opts = parser.parse(process.argv, process.env);
 var args = opts._args;
 
-if (opts.help || args.length !== 4)
-  return usage();
+if (opts.help || args.length !== 3)
+{
+    usage();
+    process.exit();
+}
 
-if (!args[2])
+if (args.length !== 3)
 {
     usage();
     process.exit(1);
@@ -82,7 +86,7 @@ else
 var logger = bunyan.createLogger(logopts);
 
 
-var targets = require(opts.config);
+var targets = require(path.resolve(opts.config));
 var client = new MultiFS(targets);
 
 var skimmer = new Skimmer({
@@ -95,18 +99,18 @@ var skimmer = new Skimmer({
     skimdb:        opts.skimdb,
     registry:      opts.registry || null,
 }).on('put', function(change) {
-    logger.info(change, 'PUT ' + change.id);
+    logger.info('PUT ' + change.id);
 }).on('rm', function(change) {
-    logger.info(change, 'RM ' + change.id);
+    logger.info('RM ' + change.id);
 }).on('send', function(change, file) {
-    logger.info(change, util.format('-> sent %s/%s', change.id, file.name));
+    logger.info(util.format('-> sent %s/%s', change.id, file));
 }).on('delete', function(change, remote) {
-    logger.info(change, util.format('-> deleted %s/%s', change.id, remote));
+    logger.info(util.format('-> deleted %s/%s', change.id, remote));
 }).on('putBack', function(change) {
-    logger.warning(change, util.format('-> putback %s', change.id));
+    logger.warning(util.format('-> putback %s', change.id));
 }).on('log', function(msg) {
-    logger.debug('LOG: ' + msg);
+    // logger.debug('LOG: ' + msg);
 });
 
 skimmer.start();
-logger.info('now following');
+logger.info('now skimming ' + skimmer.source + ' into ' + skimmer.skimdb);

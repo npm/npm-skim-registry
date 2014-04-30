@@ -114,7 +114,7 @@ MultiSkimmer.prototype.onSequenceFileRead = function onSequenceFileRead(err, dat
 	}, this.onChange.bind(this));
 
 	this.following = true;
-	this.emit('log', 'started');
+	this.emit('log', 'now following ' + this.source);
 };
 
 MultiSkimmer.prototype.saveSequence = function saveSequence()
@@ -139,13 +139,13 @@ MultiSkimmer.prototype.afterSave = function afterSave(err)
 
 MultiSkimmer.prototype.pause = function pause()
 {
-	this.emit('log', 'pausing');
+	// this.emit('log', 'pausing');
 	this.follow.pause();
 };
 
 MultiSkimmer.prototype.resume = function resume()
 {
-	this.emit('log', 'resuming');
+	// this.emit('log', 'resuming');
 	this.saveSequence();
 	this.follow.resume();
 };
@@ -230,7 +230,7 @@ MultiSkimmer.prototype.handlePut = function handlePut(change)
 		return;
 	}
 
-	this.emit('log', 'handling put: ' + change.id);
+	// this.emit('log', 'handling put: ' + change.id);
 	this.pause();
 	var url = this.source + '/' + change.id + '?att_encoding_info=true&revs=true';
 	Request.get(url, { json: true }, function(err, res, body)
@@ -308,7 +308,6 @@ MultiSkimmer.prototype.checkFileAndCopy = function checkFileAndCopy(changeInfo, 
         return this.copyJSON(changeInfo, filename, metadata, callback);
 
 	var fpath = path.join(changeInfo.doc.name, filename);
-    this.emit('log', 'statting ' + fpath);
 	self.client.stat(fpath, function(err, type, stat)
 	{
 		// ENOENT means we don't have a file there! push it up
