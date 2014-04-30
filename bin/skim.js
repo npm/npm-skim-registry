@@ -1,10 +1,12 @@
 #!/usr/bin/env node
 
-// TODO finish revising this for multi-fs
-
-var  MultiFS  = require('multi-fs'),
+var
      Skimmer  = require('../multiskimmer'),
-     dashdash = require('dashdash');
+     bunyan   = require('bunyan'),
+     dashdash = require('dashdash'),
+     MultiFS  = require('multi-fs'),
+     util     = require('util')
+     ;
 
 var parser = dashdash.createParser({
   options: [
@@ -39,7 +41,6 @@ var parser = dashdash.createParser({
     { names: ['help', 'h'],
       type: 'bool',
       help: 'Print this help and exit' },
-
   ]
 });
 
@@ -49,19 +50,7 @@ var args = opts._args;
 if (opts.help || args.length !== 4)
   return usage();
 
-var targets = require(opts.config);
-var client = new MultiFS(targets);
-
-var db            = args[2];
-var seqFile       = opts.seq_file;
-var seq           = opts.seq;
-var inactivity_ms = opts.inactivity_ms;
-var del           = opts.delete;
-var skim          = opts.skimdb;
-var registry      = opts.registry || null;
-
-
-if (!db)
+if (!args[2])
 {
     usage();
     process.exit(1);
@@ -78,26 +67,46 @@ function usage()
     console.log(parser.help());
 }
 
+var logopts =
+{
+    name: 'npm-skim-registry',
+    serializers: bunyan.stdSerializers,
+    streams: [ ]
+};
+
+if (process.env.NODE_ENV === 'dev')
+    logopts.streams.push({level: 'debug', stream: process.stdout});
+else
+    logopts.streams.push({level: 'info', stream: process.stdout});
+
+var logger = bunyan.createLogger(logopts);
 
 
-Skim({
-  client: client,
-  db: db,
-  path: path,
-  seqFile: seqFile,
-  inactivity_ms: inactivity_ms,
-  seq: seq,
-  delete: del,
-  skim: skim,
-  registry: registry
+var targets = require(opts.config);
+var client = new MultiFS(targets);
+
+var skimmer = new Skimmer({
+    client:        client,
+    sequence:      opts.seq,
+    sequenceFile:  opts.seq_file,
+    inactivity_ms: opts.inactivity_ms,
+    delete:        opts.delete,
+    source:        args[2],
+    skimdb:        opts.skimdb,
+    registry:      opts.registry || null,
 }).on('put', function(change) {
-  console.log('PUT %s', change.id);
+    logger.info(change, 'PUT ' + change.id);
 }).on('rm', function(change) {
-  console.log('RM %s', change.id);
+    logger.info(change, 'RM ' + change.id);
 }).on('send', function(change, file) {
-  console.log('-> sent %s/%s', change.id, file.name);
+    logger.info(change, util.format('-> sent %s/%s', change.id, file.name));
 }).on('delete', function(change, remote) {
-  console.log('-> deleted %s/%s', change.id, remote);
+    logger.info(change, util.format('-> deleted %s/%s', change.id, remote));
 }).on('putBack', function(change) {
-  console.error('-> putback %s', change.id);
+    logger.warning(change, util.format('-> putback %s', change.id));
+}).on('log', function(msg) {
+    logger.debug('LOG: ' + msg);
 });
+
+skimmer.start();
+logger.info('now following');
