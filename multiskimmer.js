@@ -24,6 +24,8 @@ var MultiSkimmer = module.exports = function MultiSkimmer(opts)
 	assert(opts.source && url.parse(opts.source).protocol, 'you must pass a couch url in the `source` option');
 	assert(opts.sequenceFile && (typeof opts.sequenceFile === 'string'), 'you must pass a path in the `sequenceFile` option');
 	assert(opts.client && opts.client.constructor.name === 'MultiFS', 'you must pass a multi-fs client in the `client` option');
+	if (opts.seq)
+		assert(typeof opts.seq === 'number', 'the `seq` option must be a number');
 	if (opts.inactivity_ms)
 		assert(typeof opts.inactivity_ms === 'number', 'the `inactivity_ms` option must be a number');
 	if (opts.skimdb)
@@ -38,6 +40,9 @@ var MultiSkimmer = module.exports = function MultiSkimmer(opts)
     this.sequenceFile  = path.resolve(opts.sequenceFile);
     this.inactivity_ms = opts.inactivity_ms;
     this.delete        = !!opts.delete;
+
+    if (opts.seq)
+        this.sequence = parseInt(opts.seq, 10);
 
     opts.source   = opts.source.replace(/\/+$/, '');
     var parsed    = url.parse(opts.source);
@@ -96,7 +101,9 @@ MultiSkimmer.prototype.onSequenceFileRead = function onSequenceFileRead(err, dat
 	if (typeof data !== 'number')
 		return this.emit('error', new Error('invalid data in sequence file'));
 
-	this.sequence = data;
+    // seq option takes precedence over the sequence file, if provided.
+    if ((typeof this.sequence) !== 'number')
+	   this.sequence = data;
 	this.emit('log', 'following with sequence number ' + data);
 
 	this.follow = follow(

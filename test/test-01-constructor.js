@@ -59,6 +59,19 @@ describe('constructor', function()
         done();
     });
 
+    it('requires a number if opts.seq is provided', function(done)
+    {
+        function shouldThrow() { return new Skimmer(
+        {
+            client:        createTestClient(),
+            source:        'http://localhost:15984/registry',
+            sequenceFile:  '.sequence',
+            seq: 'foo',
+        }); }
+        shouldThrow.must.throw(/seq/);
+        done();
+    });
+
     it('requires a valid url if opts.registry is provided', function(done)
     {
         function shouldThrow() { return new Skimmer(

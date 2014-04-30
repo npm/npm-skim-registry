@@ -2,26 +2,27 @@
 
 // TODO finish revising this for multi-fs
 
-var MultiFS = require('multi-fs');
-var Skim = require('../');
-var dashdash = require('dashdash');
+var  MultiFS  = require('multi-fs'),
+     Skimmer  = require('../multiskimmer'),
+     dashdash = require('dashdash');
+
 var parser = dashdash.createParser({
   options: [
     { names: [ 'config', 'f' ],
       type: 'string',
-      help: 'config file for multifs targets',
+      help: 'config file for multifs targets; required',
       helpArg: 'FILE' },
     { names: [ 'seq-file', 'Q' ],
       type: 'string',
-      help: 'File to store the sequence in',
+      help: 'File to store the sequence in, required',
       helpArg: 'FILE' },
     { names: [ 'seq', 'q' ],
       type: 'number',
-      help: 'Sequence ID to start at',
+      help: 'Sequence ID to start at; overrides sequence in file',
       helpArg: 'NUMBER' },
     { names: [ 'registry', 'r' ],
       type: 'string',
-      help: 'The registry where attachments can be found.  Optional.',
+      help: 'The registry where attachments can be found; optional',
       helpArg: 'URL' },
     { names: [ 'inactivity-ms' ],
       type: 'number',
@@ -30,10 +31,10 @@ var parser = dashdash.createParser({
     { names: [ 'delete', 'd' ],
       type: 'bool',
       help: 'Delete removed attachments and docs from targets' },
-    { names: [ 'skim', 's'] ,
+    { names: [ 'skimdb', 's'] ,
       type: 'string',
       helpArg: 'URL',
-      help: 'Target to write attachment free docs. ' +
+      help: 'Target to write attachment-free docs. ' +
             'Defaults to put back into COUCHDB arg.' },
     { names: ['help', 'h'],
       type: 'bool',
@@ -51,33 +52,30 @@ if (opts.help || args.length !== 4)
 var targets = require(opts.config);
 var client = new MultiFS(targets);
 
-var db = args[2];
-var path = args[3];
-var seqFile = opts.seq_file;
-var seq = opts.seq;
+var db            = args[2];
+var seqFile       = opts.seq_file;
+var seq           = opts.seq;
 var inactivity_ms = opts.inactivity_ms;
-var del = opts.delete;
-var skim = opts.skim || opts.db;
-var registry = opts.registry || null;
+var del           = opts.delete;
+var skim          = opts.skimdb;
+var registry      = opts.registry || null;
 
 
-if (!db || !path) {
-  usage();
-  process.exit(1);
+if (!db)
+{
+    usage();
+    process.exit(1);
 }
 
-function usage() {
-  console.log(usage.toString().split(/\n/).slice(4, -2).join('\n'));
-  console.log(parser.help());
-/*
-npm-skim-registry - Skim the fat out of your registry couchdb
-Usage: npm-skim-registry [args] COUCHDB MANTAPATH
-
-    COUCHDB                             Full url to your couch, like
-                                        http://localhost:5984/database
-    MANTAPATH                           Remote path in Manta, like
-                                        ~~/stor/database
-*/
+function usage()
+{
+    console.log(
+        'npm-skim-registry - Skim the fat out of your registry couchdb\n' +
+        'Usage: npm-skim-registry [args] COUCHDB\n' +
+        '\n' +
+        '    COUCHDB                   Full url to your couch, e.g.,\n'+
+        '                              http://localhost:5984/database');
+    console.log(parser.help());
 }
 
 
