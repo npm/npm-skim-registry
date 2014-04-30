@@ -23,18 +23,17 @@ or [npm-fullfat-registry](http://npm.im/npm-fullfat-registry).
 
 ```javascript
 Skim({
-  client: myMantaClient,
-  db: myCouchDBUrl,
-  path: pathInMantaWhereStuffGoes,
-  seqFile: '.sequence',
+  client:        multiFSClient,
+  source:        myCouchDBUrl,
+  sequenceFile:  '.sequence',
   inactivity_ms: 60*60*1000,
-  delete: true
+  delete:        true
 }).on('put', function(doc) {
   console.log('PUT %s', doc._id);
 }).on('rm', function(doc) {
   console.log('RM %s', doc._id);
 }).on('send', function(doc, file) {
-  console.log('-> sent %s/%s', doc._id, file.name);
+  console.log('-> sent %s/%s', doc._id, filename);
 }).on('delete', function(doc, remote) {
   console.log('-> deleted %s/%s', doc._id, remote);
 });
@@ -43,25 +42,19 @@ Skim({
 Or on the cli:
 
 ```
+> ./bin/skim.js --help
 npm-skim-registry - Skim the fat out of your registry couchdb
-Usage: npm-skim-registry [args] COUCHDB MANTAPATH
+Usage: npm-skim-registry [args] COUCHDB
 
     COUCHDB                             Full url to your couch, like
                                         http://localhost:5984/database
-    MANTAPATH                           Remote path in Manta, like
-                                        ~~/stor/database
-    -Q FILE, --seq-file=FILE            File to store the sequence in
-    -q NUMBER, --seq=NUMBER             Sequence ID to start at
-    --inactivity-ms=MS                  Max ms to wait before assuming
-                                        disconnection.
-    -d, --delete                        Delete removed attachments and docs from
-                                        manta
-    -s URL, --skim=URL                  Target to write attachment free docs.
-                                        Defaults to put back into COUCHDB arg.
-    -a ACCOUNT, --account=ACCOUNT       Manta Account (login name)
-    -h, --help                          Print this help and exit
-    -i, --insecure                      Do not validate SSL certificate
-    -k FINGERPRINT, --keyId=FINGERPRINT SSH key fingerprint
-    -u URL, --url=URL                   Manta URL
-    -v, --verbose                       verbose mode
+    -f FILE, --config=FILE    config file for multifs targets; required
+    -Q FILE, --seq-file=FILE  File to store the sequence in, required
+    -q NUMBER, --seq=NUMBER   Sequence ID to start at; overrides sequence in file
+    -r URL, --registry=URL    The registry where attachments can be found; optional
+    --inactivity-ms=MS        Max ms to wait before assuming disconnection.
+    -d, --delete              Delete removed attachments and docs from targets
+    -s URL, --skimdb=URL      Target to write attachment-free docs. Defaults to
+                              put back into COUCHDB arg.
+    -h, --help                Print this help and exit
 ```
