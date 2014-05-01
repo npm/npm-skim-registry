@@ -82,8 +82,8 @@ describe('skimming', function()
         {
             'put test-package' : 2,
             'attachment test-package/_attachments/test-package-0.0.0.tgz' : 1,
-            'sent test-package/doc.json' : 2,
-            'sent test-package/_attachments/test-package-0.0.0.tgz' : 1,
+            'sent t/test-package/doc.json' : 2,
+            'sent t/test-package/_attachments/test-package-0.0.0.tgz' : 1,
             'complete test-package': 2
         };
 
@@ -95,7 +95,7 @@ describe('skimming', function()
     it('writes files with correct md5 sums', { timeout: 20000 }, function(done)
     {
         var client = createTestClient();
-        var target = 'test-package/_attachments/test-package-0.0.0.tgz';
+        var target = 't/test-package/_attachments/test-package-0.0.0.tgz';
         client.md5(target, function(err, res, data)
         {
             demand(err).not.exist();
@@ -161,8 +161,8 @@ describe('skimming', function()
         {
             'put semver' : 2,
             'attachment semver/_attachments/semver-0.1.0.tgz' : 1,
-            'sent semver/doc.json' : 2,
-            'sent semver/_attachments/semver-0.1.0.tgz' : 1,
+            'sent s/semver/doc.json' : 2,
+            'sent s/semver/_attachments/semver-0.1.0.tgz' : 1,
             'complete semver': 2,
         };
 
@@ -196,7 +196,7 @@ describe('skimming', function()
             change.must.be.an.object();
             change.id.must.equal('semver');
 
-            client.stat('semver/_attachments/semver-0.1.0.tgz', function(err, response)
+            client.stat('s/semver/_attachments/semver-0.1.0.tgz', function(err, response)
             {
                 err.must.be.an.object();
                 err.code.must.equal('ENOENT');

@@ -168,7 +168,8 @@ MultiSkimmer.prototype.handleDeletion = function handleDeletion(change)
 {
 	this.emit('rm', change);
 	this.pause();
-	this.client.rmr('./' + change.id, this.cleanUpDeletions.bind(this, change));
+    var packagepath = createDestinationPath(change.id, '');
+	this.client.rmr(packagepath, this.cleanUpDeletions.bind(this, change));
 };
 
 MultiSkimmer.prototype.cleanUpDeletions = function cleanUpDeletions(change, err)
@@ -308,18 +309,28 @@ MultiSkimmer.prototype.checkFileAndCopy = function checkFileAndCopy(changeInfo, 
         return this.copyJSON(changeInfo, filename, metadata, callback);
 
 	var fpath = path.join(changeInfo.doc.name, filename);
-	self.client.stat(fpath, function(err, type, stat)
+
+    var destfile = createDestinationPath(changeInfo.change.id, filename);
+	self.client.stat(destfile, function(err, type, stat)
 	{
 		// ENOENT means we don't have a file there! push it up
         if (err && err.code === 'ENOENT')
-            return self.copyFile(changeInfo, filename, metadata, callback);
+            return self.copyFile(changeInfo, filename, callback);
         callback(err);
 	});
 };
 
-MultiSkimmer.prototype.copyFile = function copyFile(changeInfo, filename, metadata, callback)
+function createDestinationPath(packagename, filename)
 {
-    var destfile = path.join('.', changeInfo.change.id, filename);
+    var initial = packagename[0];
+    var destfile = path.join(initial, packagename, filename);
+
+    return destfile;
+}
+
+MultiSkimmer.prototype.copyFile = function copyFile(changeInfo, filename, callback)
+{
+    var destfile = createDestinationPath(changeInfo.change.id, filename);
     var destdir = path.dirname(destfile);
     this.emit('log', 'exploding file ' + destfile);
 
@@ -346,7 +357,7 @@ MultiSkimmer.prototype.copyJSON = function copyJSON(changeInfo, filename, metada
     var passthru = new stream.PassThrough();
     passthru.end(changeInfo.json);
 
-    var destfile = path.join('.', changeInfo.change.id, filename);
+    var destfile = createDestinationPath(changeInfo.change.id, filename);
     var destdir = path.dirname(destfile);
     this.emit('log', 'exploding docfile for ' + changeInfo.change.id);
 
