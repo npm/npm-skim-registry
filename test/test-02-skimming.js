@@ -26,6 +26,7 @@ describe('skimming', function()
             source:        'http://localhost:15984/registry',
             registry:      'http://registry.example.com/',
             sequenceFile:  './test/couch-tmp/sequence',
+            seq:           seq,
             inactivity_ms: 20000
         };
         var skimmer = new Skimmer(opts);
@@ -38,7 +39,7 @@ describe('skimming', function()
         function checkEvent()
         {
             var str = util.format.apply(util, arguments);
-            // console.log('----> ' + str)
+            //console.log('----> ' + str)
             expected.must.have.property(str);
 
             expected[str]--;
@@ -47,7 +48,6 @@ describe('skimming', function()
 
             if (Object.keys(expected).length === 0)
             {
-                skimmer.destroy();
                 callback();
             }
         }
@@ -117,13 +117,18 @@ describe('skimming', function()
         });
     });
 
-    it('it does not recopy attachments it already has', function(done)
+    it('it does not recopy attachments it already has', { timeout: 20000 }, function(done)
     {
-        // TODO
-        // make a second skimmer
-        // verify that it only gets 'put test-package' && 'complete test-package' events
+        var expected =
+        {
+            'put test-package' : 1,
+            'complete test-package': 1
+        };
 
-        done();
+        function cleanup() { skimmer.destroy(); setTimeout(done, 1000); }
+        var skimmer = verifyExpectedEvents(expected, cleanup);
+        skimmer.sequence = 0; // hack
+        skimmer.start();
     });
 
     function publishPackage(callback)
@@ -167,7 +172,7 @@ describe('skimming', function()
         skimmer.start();
         publishPackage(function()
         {
-            console.log('published a second package');
+            // console.log('published a second package');
         });
     });
 
@@ -182,9 +187,32 @@ describe('skimming', function()
         });
     });
 
-    // TODO is this test a valid exercise of the delete flag feature? What does the feature even mean?
-    it('leaves files in place on a registry doc delete (if delete is not set)', function(done)
+    it('deletes files when delete is set', { timeout: 10000 }, function(done)
     {
+        var client = createTestClient();
+        var skimmer = createSkimmer();
+        skimmer.on('delete', function(change, file)
+        {
+            change.must.be.an.object();
+            change.id.must.equal('semver');
+
+            client.stat('semver/_attachments/semver-0.1.0.tgz', function(err, response)
+            {
+                err.must.be.an.object();
+                err.code.must.equal('ENOENT');
+                cleanup();
+            });
+        });
+
+        skimmer.start();
+
+        function cleanup()
+        {
+            client.destroy();
+            skimmer.destroy();
+            setTimeout(done, 1000);
+        }
+
         Request.get('http://admin:admin@localhost:15984/registry/semver', {json: true}, function(err, res, body)
         {
             var opts =
@@ -201,16 +229,8 @@ describe('skimming', function()
                 body.must.be.an.object();
                 body.must.have.property('ok');
                 body.ok.must.be.true();
-
-                var client = createTestClient();
-                client.stat('semver/_attachments/semver-0.1.0.tgz', function(err, response)
-                {
-                    demand(err).not.exist();
-                    response.must.be.an.object();
-                    response.isFile.must.be.true();
-                    done();
-                });
             });
         });
+
     });
 });
