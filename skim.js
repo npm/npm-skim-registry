@@ -57,8 +57,6 @@ var MultiSkimmer = module.exports = function MultiSkimmer(opts)
 
     if (opts.registry)
         this.registry  = url.parse(opts.registry).href.replace(/\/+$/, '');
-
-    this.on('put', this.cleanupDoc.bind(this));
 };
 util.inherits(MultiSkimmer, events.EventEmitter);
 
@@ -69,7 +67,6 @@ MultiSkimmer.prototype.registry     = null;  // the registry we're publishing to
 MultiSkimmer.prototype.delete       = false; // if couch deletions should turn into data deletions
 MultiSkimmer.prototype.sequenceFile = null;  // path to the file where we're storing sequence ids
 MultiSkimmer.prototype.following    = false; // true if we're in motion & following a db
-MultiSkimmer.prototype.saving       = false; // true if we're mid-save on our sequence file
 
 MultiSkimmer.prototype.start = function start()
 {
@@ -209,17 +206,9 @@ MultiSkimmer.prototype.handlePut = function handlePut(change)
     if (change.id.match(/^_design\//) && this.source !== this.skimdb)
         return this.putDesign(change);
 
-    if (change.id !== encodeURIComponent(change.id))
-    {
-        console.error('WARNING: Skipping %j\nWARNING: See %s',
-                change.id,
-                'https://github.com/joyent/node-manta/issues/157');
-        return;
-    }
-
     // this.emit('log', 'handling put: ' + change.id);
     this.pause();
-    var url = this.source + '/' + change.id + '?att_encoding_info=true&revs=true';
+    var url = this.source + '/' + encodeURIComponent(change.id) + '?att_encoding_info=true&revs=true';
     Request.get(url, { json: true }, function(err, res, body)
     {
         if (err) return this.emit('error', err);
@@ -241,6 +230,7 @@ MultiSkimmer.prototype.multiball = function MULTIBALL(change)
     // to copy all those attachments to their final homes using the
     // multi-fs client, but ONLY if they don't already exist.
     this.emit('log', 'MULTIBALL! ' + change.id);
+    this.cleanupDoc(change);
     this.emit('put', change);
 
     var doc = change.doc;
@@ -262,7 +252,7 @@ MultiSkimmer.prototype.multiball = function MULTIBALL(change)
         return s;
     }, {});
 
-    var json = new Buffer(JSON.stringify(doc) + '\n', 'utf8');
+    var json = new Buffer(JSON.stringify(doc, null, 2) + '\n', 'utf8');
     files['doc.json'] =
     {
         type:   'application/json',
@@ -289,7 +279,6 @@ function md5sum(str)
 
 MultiSkimmer.prototype.checkFileAndCopy = function checkFileAndCopy(changeInfo, filename, metadata, callback)
 {
-    var self = this;
     this.emit('log', 'skimming ' + filename + ' from ' + changeInfo.doc.name);
     if (filename === 'doc.json')
         return this.copyJSON(changeInfo, filename, metadata, callback);
@@ -297,18 +286,18 @@ MultiSkimmer.prototype.checkFileAndCopy = function checkFileAndCopy(changeInfo, 
     var fpath = path.join(changeInfo.doc.name, filename);
 
     var destfile = createDestinationPath(changeInfo.change.id, filename);
-    self.client.stat(destfile, function(err, type, stat)
+    this.client.stat(destfile, function(err, type, stat)
     {
         // ENOENT means we don't have a file there! push it up
         if (err && err.code === 'ENOENT')
-            return self.copyFile(changeInfo, filename, callback);
+            return this.copyFile(changeInfo, filename, callback);
         callback(err);
-    });
+    }.bind(this));
 };
 
 function createDestinationPath(packagename, filename)
 {
-    var initial = packagename[0];
+    var initial = packagename.charAt(0);
     var destfile = path.join(initial, packagename, filename);
 
     return destfile;
@@ -381,8 +370,7 @@ MultiSkimmer.prototype.fetchAttachment = function fetchAttachment(change, file, 
             path.dirname(file.name).replace(/^_attachments/, change.id) +
             '/' +
             encodeURIComponent(path.basename(file)),
-        method: 'GET',
-        json: true
+        method: 'GET'
     };
     Request(opts).pipe(passthru);
     callback(null, passthru);
@@ -491,7 +479,7 @@ MultiSkimmer.prototype.putBack = function(change, results)
     this.emit('log', 'entering putBack');
 
     var doc = change.doc;
-    var putUrl = this.skimdb + '/' + encodeURIComponent(doc._id);
+    var putUrl = this.skimdb + '/' + encodeURIComponent(change.id);
 
     // If this isn't a putBACK, then treat it like a replication job
     // If someone wrote something else, go ahead and be in conflict.
