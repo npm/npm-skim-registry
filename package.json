@@ -35,7 +35,7 @@
     "attachments"
   ],
   "license": "ISC",
-  "main": "multiskimmer.js",
+  "main": "skim.js",
   "repository": {
     "type": "git",
     "url": "git://github.com/npm/npm-skim-registry"

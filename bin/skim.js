@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 var
-     Skimmer  = require('../multiskimmer'),
+     Skimmer  = require('../skim'),
      bunyan   = require('bunyan'),
      dashdash = require('dashdash'),
      MultiFS  = require('multi-fs'),
@@ -103,7 +103,7 @@ var skimmer = new Skimmer({
 }).on('rm', function(change) {
     logger.info('RM ' + change.id);
 }).on('send', function(change, file) {
-    logger.info(util.format('-> sent %s/%s', change.id, file));
+    logger.info(util.format('-> sent %s', file));
 }).on('delete', function(change, remote) {
     logger.info(util.format('-> deleted %s/%s', change.id, remote));
 }).on('putBack', function(change) {

@@ -9,7 +9,7 @@ var
     demand   = require('must'),
     fs       = require('fs'),
     path     = require('path'),
-    Skimmer  = require('../multiskimmer.js'),
+    Skimmer  = require('../skim.js'),
     util     = require('util')
     ;
 
