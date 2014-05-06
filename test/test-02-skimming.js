@@ -27,7 +27,8 @@ describe('skimming', function()
             registry:      'http://registry.example.com/',
             sequenceFile:  './test/couch-tmp/sequence',
             seq:           seq,
-            inactivity_ms: 20000
+            inactivity_ms: 20000,
+            delete:        true,
         };
         var skimmer = new Skimmer(opts);
         // skimmer.on('log', function(msg) { console.log('LOG: ' + msg); });

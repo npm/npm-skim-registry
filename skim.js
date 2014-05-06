@@ -142,7 +142,7 @@ MultiSkimmer.prototype.onChange = function onChange(err, change)
     this.sequence = change.seq;
     if (!change.id) return;
 
-    if (change.deleted)
+    if (change.deleted && this.delete)
         this.handleDeletion(change);
     else
         this.handlePut(change);
@@ -160,7 +160,7 @@ MultiSkimmer.prototype.handleDeletion = function handleDeletion(change)
 
 MultiSkimmer.prototype.cleanUpDeletions = function cleanUpDeletions(change, err)
 {
-    // If the db isn't the same as the skim, then presumably it's already
+    // If the db is the same as the skim, then presumably it's already
     // gone, and if the user was just deleting a conflict or something, we
     // don't want to completely delete the entire thing.
     if (err || !change.id || this.source === this.skimdb)
