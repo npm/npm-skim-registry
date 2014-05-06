@@ -10,6 +10,7 @@ var
     path       = require('path'),
     readmeTrim = require('npm-registry-readme-trim'),
     Request    = require('request'),
+    Sequence   = require('seq-file'),
     stream     = require('stream'),
     url        = require('url'),
     util       = require('util')
@@ -37,7 +38,7 @@ var MultiSkimmer = module.exports = function MultiSkimmer(opts)
 
     this.opts          = opts;
     this.client        = opts.client;
-    this.sequenceFile  = path.resolve(opts.sequenceFile);
+    this.sequenceFile  = new Sequence(path.resolve(opts.sequenceFile));
     this.inactivity_ms = opts.inactivity_ms;
     this.delete        = !!opts.delete;
 
@@ -75,7 +76,7 @@ MultiSkimmer.prototype.start = function start()
     if (this.following)
         throw new Error('start() called twice');
 
-    fs.readFile(this.sequenceFile, 'ascii', this.onSequenceFileRead.bind(this));
+    this.sequenceFile.read(this.onSequenceFileRead.bind(this));
 };
 
 MultiSkimmer.prototype.stop =
@@ -119,22 +120,7 @@ MultiSkimmer.prototype.onSequenceFileRead = function onSequenceFileRead(err, dat
 
 MultiSkimmer.prototype.saveSequence = function saveSequence()
 {
-    if (this.saving) return;
-
-    this.saving = true;
-    var tmp = this.sequenceFile + '.TMP';
-    var data = this.sequence + '\n';
-    fs.writeFile(tmp, data, 'ascii', function(err)
-    {
-        if (err) return this.afterSave(err);
-        fs.rename(tmp, this.sequenceFile, this.afterSave.bind(this));
-    }.bind(this));
-};
-
-MultiSkimmer.prototype.afterSave = function afterSave(err)
-{
-    if (err) this.emit('error', err);
-    this.saving = false;
+    this.sequenceFile.save(this.sequence);
 };
 
 MultiSkimmer.prototype.pause = function pause()

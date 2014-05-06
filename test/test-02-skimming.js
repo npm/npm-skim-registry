@@ -131,6 +131,17 @@ describe('skimming', function()
         skimmer.start();
     });
 
+    it('updates the sequence file', function(done)
+    {
+        fs.readFile('./test/couch-tmp/sequence', 'ascii', function(err, data)
+        {
+            demand(err).not.exist();
+            var num = parseInt(data, 10);
+            num.must.equal(2);
+            done();
+        });
+    });
+
     function publishPackage(callback)
     {
         var testPkg = require('./fixtures/semver.json');

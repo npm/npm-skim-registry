@@ -13,7 +13,8 @@
     "http-https": "~1.0.0",
     "multi-fs": "~0.2.0",
     "npm-registry-readme-trim": "~1.0.0",
-    "request": "^2.34.0"
+    "request": "^2.34.0",
+    "seq-file": "^1.0.1"
   },
   "devDependencies": {
     "lab": "^3.0.1",
