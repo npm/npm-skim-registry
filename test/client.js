@@ -9,12 +9,6 @@ if (!process.env.MANTA_KEY_ID || !process.env.MANTA_USER || !process.env.MANTA_U
     process.exit(1);
 }
 
-if (!process.env.SSH_AUTH_SOCK)
-{
-    console.error('not ok - only ssh-agent authentication is supported');
-    process.exit(1);
-}
-
 var base = path.resolve(__dirname, 'tmp/registry-testing');
 
 var cwd = process.cwd()
@@ -30,7 +24,11 @@ if (home && base.indexOf(home) === 0)
 var targets =
 [
     { type: 'fs', path: base + '/0' },
-    'ssh://localhost:' + homeshort + '/1',
+    {
+        type: 'ssh',
+        host: 'localhost',
+        path: homeshort + '/1'
+    },
     '~~/stor/registry-testing/2',
 ];
 
