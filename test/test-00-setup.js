@@ -39,15 +39,12 @@ describe('setup', function()
 
     it('can start couch as a zombie child', { timeout: 25000 }, function(done)
     {
-        var couchpath = 'couchdb';
         if (process.env.WERCKER_COUCHDB_HOST)
-        {
-            couchpath = '/usr/bin/couchdb';
-        }
+            return done(); // couch already running
 
         var fd = fs.openSync(pidfile, 'wx');
         try { fs.unlinkSync(logfile); } catch (er) {}
-        var child = spawn(couchpath, ['-a', conf], {
+        var child = spawn('couchdb', ['-a', conf], {
             detached: true,
             stdio: 'ignore',
             cwd: cwd
@@ -77,18 +74,13 @@ describe('setup', function()
         });
     });
 
-    function makeCouchURI()
-    {
-        if (process.env.WERCKER_COUCHDB_URL)
-            return 'http://' + WERCKER_COUCHDB_URL + '/registry/';
-        else
-            return 'http://admin:admin@localhost:15984/registry/';
-    }
-
     it('can create a registry db', function(done)
     {
+        if (process.env.WERCKER_COUCHDB_HOST)
+            return done(); // db already created
+
         var uri = makeCouchURI();
-        Request.put(uri, function(err, res, body)
+        Request.put('http://admin:admin@localhost:15984/registry/', function(err, res, body)
         {
             res.statusCode.must.equal(201);
             done();
