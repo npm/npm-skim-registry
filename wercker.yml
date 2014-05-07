@@ -1,14 +1,12 @@
 box: wercker/nodejs
 services:
   - mies/couchdb
-
 build:
   steps:
     - npm-install
     - npm-test
-
     - script:
-        name: echo nodejs information
+        name: create registry db
         code: |
           echo "node version $(node -v) running"
           echo "npm version $(npm -v) running"
