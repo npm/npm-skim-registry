@@ -71,7 +71,7 @@ describe('skimming', function()
                 console.error(err.stackTrace());
             else
                 console.error(err);
-            demand(err).not.exist();
+            // demand(err).not.exist();
         });
 
         return skimmer;

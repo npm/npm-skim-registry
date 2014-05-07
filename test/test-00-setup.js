@@ -46,8 +46,15 @@ describe('setup', function()
         done();
     });
 
-    it('can start couch as a zombie child', { timeout: 15000 }, function(done)
+    it('can start couch as a zombie child', { timeout: 25000 }, function(done)
     {
+        if (process.env.WERCKER_COUCHDB_HOST)
+        {
+            console.log(process.env);
+            return done();
+        }
+
+
         var fd = fs.openSync(pidfile, 'wx');
         try { fs.unlinkSync(logfile); } catch (er) {}
         var child = spawn('couchdb', ['-a', conf], {
@@ -71,7 +78,7 @@ describe('setup', function()
                 err = new Error('not started yet');
             if (err)
             {
-                if (Date.now() - start < 15000)
+                if (Date.now() - start < 25000)
                     return setTimeout(function () { fs.readFile(logfile, R) }, 1000);
                 else
                     demand(err).be.falsy();
