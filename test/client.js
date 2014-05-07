@@ -3,12 +3,6 @@ var
     path    = require('path')
     ;
 
-if (!process.env.MANTA_KEY_ID || !process.env.MANTA_USER || !process.env.MANTA_URL)
-{
-    console.error('not ok - need manta environs');
-    process.exit(1);
-}
-
 var base = path.resolve(__dirname, 'tmp/registry-testing');
 
 var cwd = process.cwd()
@@ -24,7 +18,6 @@ if (home && base.indexOf(home) === 0)
 var targets =
 [
     { type: 'fs', path: base + '/0' },
-    '~~/stor/registry-testing/2',
 ];
 
 var createClient = module.exports = function createClient()

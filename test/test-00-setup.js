@@ -7,10 +7,10 @@ var
     before   = lab.before,
     demand   = require('must'),
     fs       = require('fs'),
-    Manta    = require('manta-client'),
     mkdirp   = require('mkdirp'),
     path     = require('path'),
-    spawn    = require('child_process').spawn
+    spawn    = require('child_process').spawn,
+    Request  = require('request')
     ;
 
 describe('setup', function()
@@ -18,19 +18,14 @@ describe('setup', function()
     it('can create test destination directories', function(done)
     {
         var fix = path.join(__dirname, 'tmp', 'registry-testing');
-        mkdirp.sync(path.join(fix, '0'));
-        mkdirp.sync(path.join(fix, '1'));
-        done();
-    });
-
-    it('can create a manta destination directory', { timeout: 20000 }, function(done)
-    {
-        var manta = Manta(process.argv, process.env);
-        manta.mkdirp('~~/stor/registry-testing/', function(err)
+        mkdirp(path.join(fix, '0'), function(err)
         {
-            demand(err).be.falsy();
-            manta.close();
-            done();
+            demand(err).not.exist();
+            mkdirp(path.join(fix, '1'), function(err)
+            {
+                demand(err).not.exist();
+                done();
+            });
         });
     });
 
@@ -45,20 +40,14 @@ describe('setup', function()
     it('can set up couch tmp directory', function(done)
     {
         fs.mkdirSync(path.join(__dirname, 'couch-tmp'));
-
-        var files = ['_replicator.couch', '_users.couch', 'registry.couch'];
-        files.forEach(function(f)
-        {
-            var src = path.resolve(__dirname, 'fixtures', f);
-            var dest = path.resolve(__dirname, 'couch-tmp', f);
-            fs.writeFileSync(dest, fs.readFileSync(src))
-        });
-
         done();
     });
 
-    it('can start couch as a zombie child', { timeout: 15000 }, function(done)
+    it('can start couch as a zombie child', { timeout: 25000 }, function(done)
     {
+        if (process.env.WERCKER_COUCHDB_HOST)
+            return done(); // couch already running
+
         var fd = fs.openSync(pidfile, 'wx');
         try { fs.unlinkSync(logfile); } catch (er) {}
         var child = spawn('couchdb', ['-a', conf], {
@@ -72,21 +61,33 @@ describe('setup', function()
         fs.writeSync(fd, child.pid + '\n');
         fs.closeSync(fd);
 
-        // wait for it to create a log, give it 5 seconds
+        // wait for it to create a log, give it 15 seconds
         var start = Date.now();
 
-        fs.readFile(logfile, function R (err, log)
+        fs.readFile(logfile, function R(err, log)
         {
             log = log ? log.toString() : '';
             if (!err && !log.match(started))
                 err = new Error('not started yet');
             if (err)
             {
-                if (Date.now() - start < 5000)
+                if (Date.now() - start < 25000)
                     return setTimeout(function () { fs.readFile(logfile, R) }, 1000);
                 else
                     demand(err).be.falsy();
             }
+            done();
+        });
+    });
+
+    it('can create a registry db', function(done)
+    {
+        if (process.env.WERCKER_COUCHDB_HOST)
+            return done(); // db already created
+
+        Request.put('http://admin:admin@localhost:15984/registry/', function(err, res, body)
+        {
+            res.statusCode.must.equal(201);
             done();
         });
     });
