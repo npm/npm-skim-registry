@@ -7,7 +7,6 @@ var
     before   = lab.before,
     demand   = require('must'),
     fs       = require('fs'),
-    Manta    = require('manta-client'),
     path     = require('path'),
     rimraf   = require('rimraf');
 
@@ -41,19 +40,6 @@ describe('cleanup', function()
         rimraf(path.join(__dirname, 'tmp'), function(err)
         {
             demand(err).be.falsy();
-            done();
-        });
-    });
-
-    it('can gut the multifishes', { timeout: 30000 }, function(done)
-    {
-        var manta = Manta(process.argv, process.env);
-        manta.rmr('~~/stor/registry-testing/', function(err)
-        {
-            if (err && (err.statusCode !== 404 && err.code !== 'ENOENT'))
-                demand(err).be.falsy();
-
-            manta.close();
             done();
         });
     });

@@ -7,10 +7,10 @@ var
     before   = lab.before,
     demand   = require('must'),
     fs       = require('fs'),
-    Manta    = require('manta-client'),
     mkdirp   = require('mkdirp'),
     path     = require('path'),
-    spawn    = require('child_process').spawn
+    spawn    = require('child_process').spawn,
+    Request  = require('request')
     ;
 
 describe('setup', function()
@@ -34,15 +34,6 @@ describe('setup', function()
     it('can set up couch tmp directory', function(done)
     {
         fs.mkdirSync(path.join(__dirname, 'couch-tmp'));
-
-        var files = ['_replicator.couch', '_users.couch', 'registry.couch'];
-        files.forEach(function(f)
-        {
-            var src = path.resolve(__dirname, 'fixtures', f);
-            var dest = path.resolve(__dirname, 'couch-tmp', f);
-            fs.writeFileSync(dest, fs.readFileSync(src))
-        });
-
         done();
     });
 
@@ -82,6 +73,24 @@ describe('setup', function()
                 else
                     demand(err).be.falsy();
             }
+            done();
+        });
+    });
+
+    function makeCouchURI()
+    {
+        if (process.env.WERCKER_COUCHDB_URL)
+            return 'http://' + WERCKER_COUCHDB_URL + '/registry/';
+        else
+            return 'http://admin:admin@localhost:15984/registry/';
+    }
+
+    it('can create a registry db', function(done)
+    {
+        var uri = makeCouchURI();
+        Request.put(uri, function(err, res, body)
+        {
+            res.statusCode.must.equal(201);
             done();
         });
     });

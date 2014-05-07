@@ -18,12 +18,20 @@ var createTestClient = require('./client');
 
 describe('skimming', function()
 {
+    function makeCouchURI()
+    {
+        if (process.env.WERCKER_COUCHDB_URL)
+            return 'http://' + WERCKER_COUCHDB_URL + '/registry';
+        else
+            return 'http://admin:admin@localhost:15984/registry';
+    }
+
     function createSkimmer(seq)
     {
         var opts =
         {
             client:        createTestClient(),
-            source:        'http://localhost:15984/registry',
+            source:        makeCouchURI(),
             registry:      'http://registry.example.com/',
             sequenceFile:  './test/couch-tmp/sequence',
             seq:           seq,
@@ -77,6 +85,29 @@ describe('skimming', function()
         return skimmer;
     }
 
+    it('can publish a test package to couchdb', function(done)
+    {
+        var testPkg = require('./fixtures/test-package.json');
+        var tf = path.resolve(__dirname, 'fixtures/test-package-0.0.0.tgz');
+        var tgzData = fs.readFileSync(tf, 'base64');
+        testPkg._attachments['test-package-0.0.0.tgz'].data = tgzData;
+        testPkg._attachments['test-package-0.0.0.tgz'].stub = false;
+
+        var opts =
+        {
+            uri:    makeCouchURI() + '/test-package',
+            method: 'PUT',
+            json:   testPkg,
+        };
+
+        Request(opts, function(err, response, body)
+        {
+            demand(err).not.exist();
+            response.statusCode.must.equal(201);
+            done();
+        });
+    });
+
     it('emits expected events on a first sync', { timeout: 20000 }, function(done)
     {
         var expected =
@@ -109,7 +140,7 @@ describe('skimming', function()
 
     it('removes the attachment from couch', { timeout: 10000 }, function(done)
     {
-        Request.get('http://localhost:15984/registry/test-package', {json: true}, function(err, response, body)
+        Request.get(makeCouchURI() + '/test-package', {json: true}, function(err, response, body)
         {
             demand(err).not.exist();
             body.must.be.an.object();
@@ -153,7 +184,7 @@ describe('skimming', function()
 
         var opts =
         {
-            uri:    'http://admin:admin@localhost:15984/registry/semver',
+            uri:    makeCouchURI() + '/semver',
             method: 'PUT',
             json:   testPkg,
         };
@@ -190,7 +221,7 @@ describe('skimming', function()
 
     it('updated the registry url properly', function(done)
     {
-        Request.get('http://admin:admin@localhost:15984/registry/semver', {json: true}, function(err, res, body)
+        Request.get(makeCouchURI() + '/semver', {json: true}, function(err, res, body)
         {
             var tarball = body.versions['0.1.0'].dist.tarball;
             tarball.must.be.a.string();
@@ -225,11 +256,11 @@ describe('skimming', function()
             setTimeout(done, 1000);
         }
 
-        Request.get('http://admin:admin@localhost:15984/registry/semver', {json: true}, function(err, res, body)
+        Request.get(makeCouchURI() + '/semver', {json: true}, function(err, res, body)
         {
             var opts =
             {
-                uri: 'http://admin:admin@localhost:15984/registry/semver',
+                uri: makeCouchURI() + '/semver',
                 method: 'DELETE',
                 json: true,
                 qs: { rev: body._rev}
