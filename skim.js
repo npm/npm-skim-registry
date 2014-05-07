@@ -501,8 +501,16 @@ MultiSkimmer.prototype.putBack = function(change, results)
     Request(opts, function(err, res, body)
     {
         if (err) return this.emit('error', err);
+        
         // We might get a 409 here if skimdb & source are the same, but
-        // this will get handled naturally later.
+        // this will get handled naturally later. Other failures need to be
+        // barked about.
+
+        if (res.statusCode >= 400 && !(res.statusCode === 409 && this.skimdb === this.source))
+        {
+            this.emit('error', new Error(res.statusCode + ' on putback'));
+        }
+
         this.completeAndResume(change, results);
     }.bind(this));
 };
