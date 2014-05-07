@@ -149,7 +149,7 @@ describe('skimming', function()
         });
     });
 
-    it('it does not recopy attachments it already has', { timeout: 20000 }, function(done)
+    it('does not recopy attachments it already has', { timeout: 20000 }, function(done)
     {
         var expected =
         {
@@ -197,7 +197,7 @@ describe('skimming', function()
         });
     }
 
-    it('a live publish is handled correctly', { timeout: 20000 }, function(done)
+    it('handles a live publish correctly', { timeout: 20000 }, function(done)
     {
         var client = createTestClient();
         var expected2 =

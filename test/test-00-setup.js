@@ -18,9 +18,15 @@ describe('setup', function()
     it('can create test destination directories', function(done)
     {
         var fix = path.join(__dirname, 'tmp', 'registry-testing');
-        mkdirp.sync(path.join(fix, '0'));
-        mkdirp.sync(path.join(fix, '1'));
-        done();
+        mkdirp(path.join(fix, '0'), function(err)
+        {
+            demand(err).not.exist();
+            mkdirp(path.join(fix, '1'), function(err)
+            {
+                demand(err).not.exist();
+                done();
+            });
+        });
     });
 
     // run with the cwd of the main program.
