@@ -24,11 +24,6 @@ if (home && base.indexOf(home) === 0)
 var targets =
 [
     { type: 'fs', path: base + '/0' },
-    {
-        type: 'ssh',
-        host: 'localhost',
-        path: homeshort + '/1'
-    },
     '~~/stor/registry-testing/2',
 ];
 
