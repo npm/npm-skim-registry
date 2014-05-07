@@ -42,7 +42,7 @@
     "url": "git://github.com/npm/npm-skim-registry"
   },
   "scripts": {
-    "test": "lab test/test*.js",
+    "test": "lab -v test/test*.js",
     "coverage": "lab -vc test/test*.js",
     "dev": "NODE_ENV=dev ./bin/skim.js -Q .sequence -s http://localhost:5984/registry -f test/dev-targets.js https://fullfatdb.npmjs.com/registry | bunyan -o short"
   }

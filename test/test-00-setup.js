@@ -48,16 +48,15 @@ describe('setup', function()
 
     it('can start couch as a zombie child', { timeout: 25000 }, function(done)
     {
+        var couchpath = 'couchdb';
         if (process.env.WERCKER_COUCHDB_HOST)
         {
-            console.log(process.env);
-            return done();
+            couchpath = '/usr/bin/couchdb';
         }
-
 
         var fd = fs.openSync(pidfile, 'wx');
         try { fs.unlinkSync(logfile); } catch (er) {}
-        var child = spawn('couchdb', ['-a', conf], {
+        var child = spawn(couchpath, ['-a', conf], {
             detached: true,
             stdio: 'ignore',
             cwd: cwd
