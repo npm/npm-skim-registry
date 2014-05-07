@@ -15,7 +15,7 @@ This results in deleting attachments that don't belong (except for
 but keeping attachments in Manta if they are needed for a published
 version, even as they are removed from couchdb.
 
-You probably don't need this.  It's super niche.  More likely, if
+You probably don't need this. It's super niche.  More likely, if
 you're even reading this, you want either [mcouch](http://npm.im/mcouch)
 or [npm-fullfat-registry](http://npm.im/npm-fullfat-registry).
 
