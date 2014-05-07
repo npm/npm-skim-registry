@@ -3,12 +3,6 @@ var
     path    = require('path')
     ;
 
-if (!process.env.MANTA_KEY_ID || !process.env.MANTA_USER || !process.env.MANTA_URL)
-{
-    console.error('not ok - need manta environs');
-    process.exit(1);
-}
-
 var base = path.resolve(__dirname, 'tmp/registry-testing');
 
 var cwd = process.cwd()

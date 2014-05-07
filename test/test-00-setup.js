@@ -23,17 +23,6 @@ describe('setup', function()
         done();
     });
 
-    it('can create a manta destination directory', { timeout: 20000 }, function(done)
-    {
-        var manta = Manta(process.argv, process.env);
-        manta.mkdirp('~~/stor/registry-testing/', function(err)
-        {
-            demand(err).be.falsy();
-            manta.close();
-            done();
-        });
-    });
-
     // run with the cwd of the main program.
     var cwd = path.dirname(__dirname);
 
@@ -72,17 +61,17 @@ describe('setup', function()
         fs.writeSync(fd, child.pid + '\n');
         fs.closeSync(fd);
 
-        // wait for it to create a log, give it 5 seconds
+        // wait for it to create a log, give it 15 seconds
         var start = Date.now();
 
-        fs.readFile(logfile, function R (err, log)
+        fs.readFile(logfile, function R(err, log)
         {
             log = log ? log.toString() : '';
             if (!err && !log.match(started))
                 err = new Error('not started yet');
             if (err)
             {
-                if (Date.now() - start < 5000)
+                if (Date.now() - start < 15000)
                     return setTimeout(function () { fs.readFile(logfile, R) }, 1000);
                 else
                     demand(err).be.falsy();
