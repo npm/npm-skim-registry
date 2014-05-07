@@ -21,7 +21,7 @@ describe('skimming', function()
     function makeCouchURI()
     {
         if (process.env.WERCKER_COUCHDB_URL)
-            return 'http://' + WERCKER_COUCHDB_URL + '/registry';
+            return 'http://' + process.env.WERCKER_COUCHDB_URL + '/registry';
         else
             return 'http://admin:admin@localhost:15984/registry';
     }
