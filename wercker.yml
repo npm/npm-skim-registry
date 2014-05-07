@@ -3,8 +3,6 @@ services:
   - mies/couchdb
 build:
   steps:
-    - npm-install
-    - npm-test
     - script:
         name: create registry db
         code: |
@@ -13,3 +11,5 @@ build:
           echo $WERCKER_COUCHDB_HOST
           curl -X PUT "$WERCKER_COUCHDB_HOST:5984/registry"
           curl -X GET "$WERCKER_COUCHDB_HOST:5984/_all_dbs"
+    - npm-install
+    - npm-test
