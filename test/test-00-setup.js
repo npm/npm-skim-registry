@@ -79,7 +79,6 @@ describe('setup', function()
         if (process.env.WERCKER_COUCHDB_HOST)
             return done(); // db already created
 
-        var uri = makeCouchURI();
         Request.put('http://admin:admin@localhost:15984/registry/', function(err, res, body)
         {
             res.statusCode.must.equal(201);
