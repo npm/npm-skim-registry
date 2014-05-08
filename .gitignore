@@ -1,0 +1,4 @@
+node_modules
+.sequence
+.DS_Store
+test/skimdev
