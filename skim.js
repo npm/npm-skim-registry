@@ -6,7 +6,6 @@ var
     follow     = require('follow'),
     fs         = require('fs'),
     multifs    = require('multi-fs'),
-    parse      = require('parse-json-response'),
     path       = require('path'),
     readmeTrim = require('npm-registry-readme-trim'),
     Request    = require('request'),
@@ -501,7 +500,7 @@ MultiSkimmer.prototype.putBack = function(change, results)
     Request(opts, function(err, res, body)
     {
         if (err) return this.emit('error', err);
-        
+
         // We might get a 409 here if skimdb & source are the same, but
         // this will get handled naturally later. Other failures need to be
         // barked about.
