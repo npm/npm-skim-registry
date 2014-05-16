@@ -229,8 +229,6 @@ MultiSkimmer.prototype.multiball = function MULTIBALL(change)
     // to copy all those attachments to their final homes using the
     // multi-fs client, but ONLY if they don't already exist.
     this.emit('log', 'MULTIBALL! ' + change.id);
-    this.cleanupDoc(change);
-    this.emit('put', change);
 
     var doc = change.doc;
     var files = Object.keys(doc._attachments || {})
@@ -447,6 +445,8 @@ MultiSkimmer.prototype.cleanupDoc = function onPut(change)
 
 MultiSkimmer.prototype.multiballComplete = function multiballComplete(change, results)
 {
+    this.cleanupDoc(change);
+    this.emit('put', change);
     this.emit('log', 'multiball ended ' + change.id);
     var doc = change.doc;
     var attachments = doc._attachments || {};
