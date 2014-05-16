@@ -265,7 +265,11 @@ MultiSkimmer.prototype.multiball = function MULTIBALL(change)
         this.checkFileAndCopy(changeInfo, fname, files[fname], cb);
     }.bind(this);
 
-    var completed = function(err) { this.multiballComplete(change); }.bind(this);
+    var completed = function(err)
+    {
+        if (err) return this.emit('error', err);
+        this.multiballComplete(change);
+    }.bind(this);
     async.each(Object.keys(files), iterator, completed);
 };
 
@@ -286,7 +290,7 @@ MultiSkimmer.prototype.checkFileAndCopy = function checkFileAndCopy(changeInfo, 
     this.client.stat(destfile, function(err, type, stat)
     {
         // ENOENT means we don't have a file there! push it up
-        if (err && err.code === 'ENOENT')
+        if (err && (err.code === 'ENOENT' || err.message.match(/No such file/)))
             return this.copyFile(changeInfo, filename, callback);
         callback(err);
     }.bind(this));
