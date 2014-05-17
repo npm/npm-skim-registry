@@ -340,22 +340,12 @@ MultiSkimmer.prototype.copyJSON = function copyJSON(changeInfo, filename, metada
     this.client.mkdirp(destdir, function(err)
     {
         if (err) return callback(err);
-        this.client.md5(destfile, function(err, res, response)
-        {
-            if (err && err.code !== 'ENOENT') return callback(err);
-            if (!err)
-            {
-                var md5 = response.results[0];
-                if (md5 === metadata.digest)
-                    return callback();
-            }
 
-            this.client.writeFile(destfile, passthru, function(err)
-            {
-                if (err) return callback(err);
-                this.emit('send', changeInfo.change, destfile);
-                callback();
-            }.bind(this));
+        this.client.writeFile(destfile, passthru, function(err)
+        {
+            if (err) return callback(err);
+            this.emit('send', changeInfo.change, destfile);
+            callback();
         }.bind(this));
     }.bind(this));
 };
