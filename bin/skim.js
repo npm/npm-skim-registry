@@ -109,7 +109,7 @@ var skimmer = new Skimmer({
 }).on('putBack', function(change) {
     logger.warning(util.format('-> putback %s', change.id));
 }).on('log', function(msg) {
-    // logger.debug('LOG: ' + msg);
+    logger.debug('LOG: ' + msg);
 });
 
 skimmer.start();
