@@ -154,6 +154,7 @@ describe('skimming', function()
         var expected =
         {
             'put test-package' : 1,
+            'sent t/test-package/doc.json' : 1,
             'complete test-package': 1
         };
 
