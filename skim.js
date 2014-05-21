@@ -358,7 +358,7 @@ MultiSkimmer.prototype.fetchAttachment = function fetchAttachment(change, file, 
     {
         uri: this.source +
             '/' +
-            path.dirname(file.name).replace(/^_attachments/, change.id) +
+            change.id +
             '/' +
             encodeURIComponent(path.basename(file)),
         method: 'GET'
