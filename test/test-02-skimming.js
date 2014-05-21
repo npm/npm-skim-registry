@@ -132,7 +132,7 @@ describe('skimming', function()
         {
             demand(err).not.exist();
             res.must.be.a.string();
-            res.must.equal('d952d40c43c1f88387999986572ea0e1');
+            res.must.equal('370c275ddb2ea5b4291a6aa801da8bd8');
             client.close();
             done();
         });
