@@ -1,7 +1,7 @@
 {
   "name": "npm-skim-registry",
   "description": "Move attachments into Manta and out of the registry",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "author": "Isaac Z. Schlueter <i@izs.me> (http://blog.izs.me/)",
   "bin": "bin/skim.js",
   "bugs": "https://github.com/npm/npm-skim-registry/issues",
