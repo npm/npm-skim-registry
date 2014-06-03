@@ -7,23 +7,23 @@
   "bugs": "https://github.com/npm/npm-skim-registry/issues",
   "dependencies": {
     "async": "^0.8.0",
-    "bunyan": "^0.22.3",
-    "dashdash": "~1.4.0",
+    "bunyan": "^0.23.1",
+    "dashdash": "~1.5.0",
     "follow": "^0.10.4",
     "http-https": "~1.0.0",
-    "multi-fs": "~0.3.0",
+    "multi-fs": "~0.4.0",
     "npm-registry-readme-trim": "~1.0.0",
     "request": "^2.34.0",
     "seq-file": "^1.0.1"
   },
   "devDependencies": {
-    "lab": "^3.0.1",
-    "manta": "~1.2.6",
+    "lab": "^3.2.1",
+    "manta": "~1.2.7",
     "manta-client": "~1.0.5",
-    "mkdirp": "^0.3.5",
-    "must": "^0.11.0",
+    "mkdirp": "^0.5.0",
+    "must": "^0.12.0",
     "parse-json-response": "~1.0.0",
-    "rimraf": "^2.2.6"
+    "rimraf": "^2.2.8"
   },
   "homepage": "https://github.com/npm/npm-skim-registry",
   "keywords": [
