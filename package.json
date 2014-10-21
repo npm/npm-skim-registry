@@ -11,7 +11,7 @@
     "dashdash": "~1.7.0",
     "follow": "~0.11.3",
     "http-https": "~1.0.0",
-    "multi-fs": "~0.5.1",
+    "multi-fs": "~0.5.2",
     "npm-registry-readme-trim": "~1.0.0",
     "request": "~2.45.0",
     "seq-file": "^1.0.2"
