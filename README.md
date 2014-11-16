@@ -5,14 +5,14 @@
 
 [![wercker status](https://app.wercker.com/status/185fe5071b01008479f47c654f86cdbc/m/ "wercker status")](https://app.wercker.com/project/bykey/185fe5071b01008479f47c654f86cdbc)
 
-This moves attachments to the target in manta, but then *also* deletes
-them out of the couchdb.  It avoids then deleting them out of manta,
-by specifying a `{skip: true}` value for each tarball associated with
-a published version.
+This moves attachments to the targets specified in multifs config, but then
+*also* deletes them out of the couchdb.  It avoids then deleting them out of
+multifs targets by setting a `{skip: true}` value for each attachment
+associated with a published version.
 
 This results in deleting attachments that don't belong (except for
 `favicon.ico` on the `npm` doc, which is a special magical snowflake),
-but keeping attachments in Manta if they are needed for a published
+but keeping attachments in multifs targets if they are needed for a published
 version, even as they are removed from couchdb.
 
 You probably don't need this. It's super niche.  More likely, if
